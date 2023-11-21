@@ -36,6 +36,10 @@ namespace Reversi {
         // The next player to play
         Player next_player;
 
+        // Sets (x, y) to sq.
+        // No range checking.
+        void set(int x, int y, Square sq) noexcept;
+
     public:
         // Constructs the Board object with the initial position.
         Board() noexcept;
@@ -57,19 +61,24 @@ namespace Reversi {
         std::vector<std::pair<int, int>> get_placable() const;
 
         // Places a piece at (x, y).
+        // Doesn't check whether this is valid.
         // If (x, y) is out of range, throws std::out_of_range.
         void place(int x, int y);
 
         // Skips the current player's turn.
         // Doesn't check that the skip is legitimate.
-        void skip() noexcept;
+        inline void skip() noexcept {
+            next_player = static_cast<Player>(1 - static_cast<unsigned char>(next_player));
+        }
 
         // Assuming that both sides have nowhere to go, counts the material and
         // returns the outcome of the game.
         MatchResult count() const noexcept;
 
         // Returns the next player to play
-        Player whos_next() const noexcept;
+        inline Player whos_next() const noexcept {
+            return next_player;
+        }
     };
 
     // Manager of a game
