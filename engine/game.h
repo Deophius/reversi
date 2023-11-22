@@ -2,6 +2,7 @@
 #define REVERSI_BOARD_H
 #include <array>
 #include <iosfwd>
+#include <stdexcept>
 #include <vector>
 
 namespace Reversi {
@@ -19,6 +20,11 @@ namespace Reversi {
     enum class Player : unsigned char {
         Black, White
     };
+
+    // Violation of reversi rules
+    struct ReversiError : public std::runtime_error {
+        using std::runtime_error::runtime_error;
+    };  
 
     // The game board.
     class Board {
@@ -94,35 +100,47 @@ namespace Reversi {
         MatchResult result;
     public:
         // Creates a new manager instance, with annotation and board set to the initial position.
-        GameMan();
+        GameMan() {
+            annotation.reserve(Board::MAX_FILES * Board::MAX_RANK * 2);
+            reset();
+        }
 
         // Serializes the annotation to an ostream.
         friend std::ostream& operator<< (std::ostream& ostr, const GameMan& game);
 
         // Extracts annotation from an istream.
         // If the read fails, sets failbit of istr; if the annotation is buggy,
-        // throws std::runtime_error. In both cases, game is not modified.
+        // throws ReversiError. In both cases, game is not modified.
         friend std::istream& operator>> (std::istream& istr, GameMan& game);
 
         // Returns a const ref to the board since that couldn't violate our invariant
-        const Board& view_board() const noexcept;
+        inline const Board& view_board() const noexcept {
+            return board;
+        }
 
         // Places a piece at (x, y).
         // If get_result() != InProgress, throws std::logic_error.
-        // If (x, y) is out of range, throws std::out_of_range.
+        // If the board thinks (x, y) is not placable (including out of range), throws ReversiError.
         void place(int x, int y);
 
         // Skips the current player's turn.
         // On the second consecutive call to skip(), sets match result.
-        // If the skip is not legitimate, throws std::logic_error.
         // If get_result() != InProgress, throws std::logic_error.
+        // If the skip is not legitimate, throws ReversiError.
         void skip();
 
         // Gets the match result.
-        MatchResult get_result() const noexcept;
+        inline MatchResult get_result() const noexcept {
+            return result;
+        }
 
         // Resets the board to initial state and clears the annotation.
-        void reset() noexcept;
+        inline void reset() noexcept {
+            annotation.clear();
+            board = Board();
+            prev_skip = false;
+            result = MatchResult::InProgress;
+        }
     };
 }
 #endif
