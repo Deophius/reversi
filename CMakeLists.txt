@@ -8,6 +8,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 link_directories(${PROJECT_SOURCE_DIR}/lib)
 
-aux_source_directory(engine ENGINE_SOURCES)
+aux_source_directory(src SOURCES)
 
-add_executable(test_main test_main.cpp ${ENGINE_SOURCES})
+add_executable(test_main test_main.cpp ${SOURCES})
