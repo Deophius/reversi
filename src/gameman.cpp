@@ -43,8 +43,9 @@ namespace Reversi {
             throw std::logic_error("Operations after end of game");
         if (board.is_placable(x, y)) {
             board.place(x, y);
-            annotation.push_back(std::make_pair(x, y));
             prev_skip = false;
+            for (auto&& cb : listeners)
+                cb.second(x, y);
         }
         else
             throw ReversiError("Illegal move");
@@ -56,12 +57,20 @@ namespace Reversi {
         if (board.get_placable().size())
             throw ReversiError("Illegal skip");
         board.skip();
-        // Leave a trace
-        annotation.push_back({ 0, 0 });
+        for (auto&& cb : listeners)
+            cb.second(0, 0);
         // If this is the second skip in a row, count and sets the game result.
         if (prev_skip)
             result = board.count();
         prev_skip = true;
+    }
+
+    bool GameMan::listen(std::string name, std::function<void(int, int)> cb) {
+        return listeners.insert({ std::move(name), std::move(cb) }).second;
+    }
+
+    bool GameMan::unhook(const std::string& name) {
+        return listeners.erase(name);
     }
 
     TEST_CASE("serialization") {
@@ -97,5 +106,17 @@ namespace Reversi {
         CHECK_THROWS(game.skip());
         CHECK_THROWS(game.skip());
         CHECK(game.get_result() == MatchResult::InProgress);
+    }
+
+    TEST_CASE("listener add/remove") {
+        GameMan a;
+        CHECK(a.listen("other", [](int, int){}));
+        CHECK(!a.listen("annotator", [](int, int){}));
+        CHECK(!a.unhook("nonexistent"));
+        CHECK(a.unhook("other"));
+        REQUIRE(a.unhook("annotator"));
+        GameMan b;
+        b.reset();
+        CHECK(b.unhook("annotator"));
     }
 }

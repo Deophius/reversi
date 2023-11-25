@@ -4,6 +4,8 @@
 #include <iosfwd>
 #include <stdexcept>
 #include <vector>
+#include <functional>
+#include <map>
 
 namespace Reversi {
     // Friendly enum representation of the status of a square
@@ -98,11 +100,15 @@ namespace Reversi {
         bool prev_skip;
         // The match result
         MatchResult result;
+        // Since this is a GUI application, we need to allow the user to register
+        // event callbacks. In this case, when the one player makes a move.
+        std::map<std::string, std::function<void(int, int)>> listeners;
     public:
         // Creates a new manager instance, with annotation and board set to the initial position.
         GameMan() {
             annotation.reserve(Board::MAX_FILES * Board::MAX_RANK * 2);
             reset();
+            listen("annotator", [this](int x, int y){ this->annotation.push_back({ x, y }); });
         }
 
         // Serializes the annotation to an ostream.
@@ -135,12 +141,31 @@ namespace Reversi {
         }
 
         // Resets the board to initial state and clears the annotation.
+        // Note that callbacks are not deleted.
         inline void reset() noexcept {
             annotation.clear();
             board = Board();
             prev_skip = false;
             result = MatchResult::InProgress;
         }
+
+        // Adds an event listener to *this. The callback is called every time
+        // one side makes a move or skips.
+        //
+        // The callback should receive (x, y), the previous move played as argument.
+        // It's assumed that the callback can access *this in some way, so *this is
+        // not provided as part of the argument.
+        // As usual, if it's a skip, then (0, 0) is passed in.
+        //
+        // For easy unregistration, a name is required for every listener.
+        // If the `name` is already used, the new callback isn't registered, and
+        // the method returns `false`. Otherwise returns `true`.
+        bool listen(std::string name, std::function<void(int, int)> cb);
+
+        // Unregisters a listener referred to by `name`. If there is such a listener,
+        // erases it from the callback list and returns true; if there isn't, simply
+        // returns false.
+        bool unhook(const std::string& name);
     };
 }
 #endif
