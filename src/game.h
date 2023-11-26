@@ -43,10 +43,16 @@ namespace Reversi {
         unsigned char piece_cnt;
         // The next player to play
         Player next_player;
+        // Caches the result of get_placable(). It's a responsiblity of all methods
+        // that can modify the board to keep this up to date.
+        std::vector<std::pair<int, int>> placable_cache;
 
         // Sets (x, y) to sq.
         // No range checking.
         void set(int x, int y, Square sq) noexcept;
+
+        // Updates the placable cache
+        void update_placable_cache();
 
     public:
         // Constructs the Board object with the initial position.
@@ -62,11 +68,12 @@ namespace Reversi {
 
         // Checks if the block (x, y) is placable by the next player to play.
         // False if out of range.
+        // This function is not cached.
         bool is_placable(int x, int y) const noexcept;
 
         // Returns a vector of all (x, y) pairs at which the player can put his
         // next piece. Simple wrapper around is_placable.
-        std::vector<std::pair<int, int>> get_placable() const;
+        const std::vector<std::pair<int, int>>& get_placable() const;
 
         // Places a piece at (x, y).
         // Doesn't check whether this is valid.
@@ -77,6 +84,7 @@ namespace Reversi {
         // Doesn't check that the skip is legitimate.
         inline void skip() noexcept {
             next_player = static_cast<Player>(1 - static_cast<unsigned char>(next_player));
+            update_placable_cache();
         }
 
         // Assuming that both sides have nowhere to go, counts the material and

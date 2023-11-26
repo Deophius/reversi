@@ -64,8 +64,6 @@ namespace Reversi {
         gra.save_as_file("tmp.bmp");
         // Calls super()'s method.
         this->load(nana::paint::image("tmp.bmp"));
-        // Loads the new placable list.
-        mPlacable = mGameMan.view_board().get_placable();
     }
 
     BoardWidget::BoardWidget(nana::window handle, GameMan& gm, const std::string& file_name, int sq_size) :
@@ -73,14 +71,14 @@ namespace Reversi {
     {
         // Register our update.
         mGameMan.listen("boardwidget", [this](int x, int y){ this->update(x, y); });
-        mPlacable.reserve(64);
         // Update once for initial position
         update(0, 0);
         // When the user clicks, we need to respond.
         // FIXME: Current logic is pvp.
         events().click([this](const nana::arg_click& arg) {
             const auto pos = to_board_coord(arg.mouse_args);
-            if (std::find(mPlacable.cbegin(), mPlacable.cend(), pos) != mPlacable.cend())
+            decltype(auto) placable = mGameMan.view_board().get_placable();
+            if (std::find(placable.cbegin(), placable.cend(), pos) != placable.cend())
                 mGameMan.place(pos.first, pos.second);
         });
     }

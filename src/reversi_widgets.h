@@ -16,9 +16,6 @@ namespace Reversi {
         // The image of the board
         nana::paint::image mBoardImage;
 
-        // The list of placable squares
-        std::vector<std::pair<int, int>> mPlacable;
-
         // Helper function to convert the pixel language to board language.
         std::pair<int, int> to_board_coord(const nana::arg_mouse* arg);
 

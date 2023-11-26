@@ -36,6 +36,8 @@ namespace Reversi {
             set(i, 0, Square::OutOfRange);
             set(i, MAX_FILES + 1, Square::OutOfRange);
         }
+        placable_cache.reserve(MAX_FILES * MAX_RANK);
+        update_placable_cache();
     }
 
     Square Board::operator() (int x, int y) const noexcept {
@@ -105,13 +107,16 @@ namespace Reversi {
         return false;
     }
 
-    std::vector<std::pair<int, int>> Board::get_placable() const {
-        std::vector<std::pair<int, int>> ans;
+    void Board::update_placable_cache() {
+        placable_cache.clear();
         for (int i = 1; i <= MAX_FILES; i++)
             for (int j = 1; j <= MAX_RANK; j++)
                 if (is_placable(i, j))
-                    ans.push_back({ i, j });
-        return ans;
+                    placable_cache.push_back({ i, j });
+    }
+
+    std::vector<std::pair<int, int>> const& Board::get_placable() const {
+        return placable_cache;
     }
 
     TEST_CASE("placable") {
@@ -158,7 +163,7 @@ namespace Reversi {
         }
         // Finally put our piece here
         set(x, y, player);
-        // Let's abuse the function.
+        // Let's abuse the function. This also updates the cache.
         skip();
     }
 
