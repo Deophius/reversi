@@ -16,59 +16,77 @@ namespace Reversi {
         };
     }
 
-    void BoardWidget::draw_piece(nana::paint::graphics& graph, int x, int y, nana::color c) {
+    void BoardWidget::draw_piece(int x, int y, nana::color c) {
         // The center of the circle
         const auto [centerx, centery] = get_center(x, y);
         // Radius of circle
-        const int rad = 0.3 * mSquareSize;
+        const int rad = 3 * mSquareSize / 10;
         const int rad2 = rad * rad;
         for (int ix = centerx - rad; ix <= centerx + rad; ix++) {
             for (int iy = centery - rad; iy <= centery + rad; iy++) {
                 if ((ix - centerx) * (ix - centerx) + (iy - centery) * (iy - centery) <= rad2)
-                    graph.set_pixel(ix, iy, c);
+                    mGraphics.set_pixel(ix, iy, c);
             }
         }
     }
 
-    void BoardWidget::draw_cross(nana::paint::graphics& graph, int x, int y, nana::color c) {
+    void BoardWidget::draw_cross(int x, int y, nana::color c) {
         const auto [centerx, centery] = get_center(x, y);
-        const int offset = 0.1 * mSquareSize;
-        graph.line({ centerx - offset, centery }, { centerx + offset, centery }, c);
-        graph.line({ centerx, centery - offset }, { centerx, centery + offset }, c);
+        const int offset = mSquareSize / 10;
+        mGraphics.line({ centerx - offset, centery }, { centerx + offset, centery }, c);
+        mGraphics.line({ centerx, centery - offset }, { centerx, centery + offset }, c);
     }
     
     void BoardWidget::update(int x, int y) {
-        nana::paint::graphics gra({
-            (unsigned)mSquareSize * 8,
-            (unsigned)mSquareSize * 8
-        });
-        mBoardImage.stretch(
-            nana::rectangle{ {0, 0}, mBoardImage.size() },
-            gra,
-            nana::rectangle{ {0, 0}, gra.size() }
-        );
+        // First we remove the old cross. There must be some piece on that square.
+        if (mGraphCross.first) {
+            auto [i, j] = mGraphCross;
+            draw_cross(i, j, mGameMan.view_board().at(i, j) == Square::Black ?
+                nana::colors::black : nana::colors::white
+            );
+        }
         for (int i = 1; i <= 8; i++) {
             for (int j = 1; j <= 8; j++) {
                 switch (mGameMan.view_board()(i, j)) {
-                    case Square::Black:
-                        draw_piece(gra, i, j, nana::colors::black);
-                        break;
-                    case Square::White:
-                        draw_piece(gra, i, j, nana::colors::white);
-                        break;
+                case Square::Black:
+                    if (mGraphContent[i][j] != Square::Black) {
+                        draw_piece(i, j, nana::colors::black);
+                        mGraphContent[i][j] = Square::Black;
+                    }
+                    break;
+                case Square::White:
+                    if (mGraphContent[i][j] != Square::White) {
+                        draw_piece(i, j, nana::colors::white);
+                        mGraphContent[i][j] = Square::White;
+                    }
+                    break;
                 }
             }
         }
+        // If this is a skip, we still need to set the last cross to (0, 0)
+        mGraphCross = { x, y };
         if (x && y)
-            draw_cross(gra, x, y, nana::colors::green);
-        gra.save_as_file("tmp.bmp");
+            draw_cross(x, y, nana::colors::green);
+        mGraphics.save_as_file("tmp.bmp");
         // Calls super()'s method.
         this->load(nana::paint::image("tmp.bmp"));
     }
 
     BoardWidget::BoardWidget(nana::window handle, GameMan& gm, const std::string& file_name, int sq_size) :
-        nana::picture(handle), mGameMan(gm), mSquareSize(sq_size), mBoardImage(file_name)
+        nana::picture(handle), mGameMan(gm), mSquareSize(sq_size), mGraphics({
+            (unsigned)sq_size * 8,
+            (unsigned)sq_size * 8
+        }), mGraphCross(0, 0)
     {
+        for (auto& arr : mGraphContent)
+            arr.fill(Square::Empty);
+        // Pull in background for the graphics
+        nana::paint::image board_image(file_name);
+        board_image.stretch(
+            nana::rectangle{ {0, 0}, board_image.size() },
+            mGraphics,
+            nana::rectangle{ {0, 0}, mGraphics.size() }
+        );
         // Register our update.
         mGameMan.listen("boardwidget", [this](int x, int y){ this->update(x, y); });
         // Update once for initial position

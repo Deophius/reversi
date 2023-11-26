@@ -13,8 +13,14 @@ namespace Reversi {
         // The size of each square
         const int mSquareSize;
 
-        // The image of the board
-        nana::paint::image mBoardImage;
+        // The graphics object where the drawing takes place.
+        nana::paint::graphics mGraphics;
+
+        // 9*9 array that records the previous state, as drawn in graphics.
+        std::array<std::array<Square, 9>, 9> mGraphContent;
+
+        // The position of the green cross in graphics.
+        std::pair<int, int> mGraphCross;
 
         // Helper function to convert the pixel language to board language.
         std::pair<int, int> to_board_coord(const nana::arg_mouse* arg);
@@ -23,10 +29,10 @@ namespace Reversi {
         std::pair<int, int> get_center(int x, int y);
 
         // Draws a piece with color c at (x, y)
-        void draw_piece(nana::paint::graphics& graph, int x, int y, nana::color c);
+        void draw_piece(int x, int y, nana::color c);
 
         // Draws a cross at (x, y) with color c, as the "last move indicator"
-        void draw_cross(nana::paint::graphics& graph, int x, int y, nana::color c);
+        void draw_cross(int x, int y, nana::color c);
 
         // Updates the GUI widget according to data from mGameMan.
         // The last move was (x, y)
