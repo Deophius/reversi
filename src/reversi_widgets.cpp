@@ -72,32 +72,44 @@ namespace Reversi {
         this->load(nana::paint::image("tmp.bmp"));
     }
 
-    BoardWidget::BoardWidget(nana::window handle, GameMan& gm, const std::string& file_name, int sq_size) :
-        nana::picture(handle), mGameMan(gm), mSquareSize(sq_size), mGraphics({
-            (unsigned)sq_size * 8,
-            (unsigned)sq_size * 8
-        }), mGraphCross(0, 0)
-    {
+    void BoardWidget::redraw() {
+        // Reset the graphic and its content records.
         for (auto& arr : mGraphContent)
             arr.fill(Square::Empty);
-        // Pull in background for the graphics
-        nana::paint::image board_image(file_name);
-        board_image.stretch(
-            nana::rectangle{ {0, 0}, board_image.size() },
+        mBoardImage.stretch(
+            nana::rectangle{ {0, 0}, mBoardImage.size() },
             mGraphics,
             nana::rectangle{ {0, 0}, mGraphics.size() }
         );
+        mGraphCross = { 0, 0 };
+        // Now we can use update().
+        update(0, 0);
+    }
+
+    BoardWidget::BoardWidget(nana::window handle, GameMan& gm, const std::string& file_name, int sq_size) :
+        nana::picture(handle), mGameMan(gm), mSquareSize(sq_size), mBoardImage(file_name), mGraphics({
+            (unsigned)sq_size * 8,
+            (unsigned)sq_size * 8
+        })
+    {
         // Register our update.
         mGameMan.listen("boardwidget", [this](int x, int y){ this->update(x, y); });
-        // Update once for initial position
-        update(0, 0);
         // When the user clicks, we need to respond.
         // FIXME: Current logic is pvp.
         events().click([this](const nana::arg_click& arg) {
+            if (mGameMan.view_board().whos_next() != mColor
+                || mGameMan.get_result() != MatchResult::InProgress
+            )
+                return;
             const auto pos = to_board_coord(arg.mouse_args);
             decltype(auto) placable = mGameMan.view_board().get_placable();
             if (std::find(placable.cbegin(), placable.cend(), pos) != placable.cend())
                 mGameMan.place(pos.first, pos.second);
         });
+    }
+
+    void BoardWidget::start_new(Player color) {
+        mColor = color;
+        redraw();
     }
 }
