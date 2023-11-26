@@ -57,12 +57,13 @@ namespace Reversi {
         if (board.get_placable().size())
             throw ReversiError("Illegal skip");
         board.skip();
+        // If this is the second skip in a row, count and sets the game result.
+        if (prev_skip) {
+            result = board.count();
+        }
+        prev_skip = true;
         for (auto&& cb : listeners)
             cb.second(0, 0);
-        // If this is the second skip in a row, count and sets the game result.
-        if (prev_skip)
-            result = board.count();
-        prev_skip = true;
     }
 
     bool GameMan::listen(std::string name, std::function<void(int, int)> cb) {

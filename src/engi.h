@@ -29,8 +29,8 @@ namespace Reversi {
         // GameMan also calls this after its board is updated.
         virtual void enter_move(int x, int y) = 0;
 
-        // Computes a move and returns it. (0, 0) means a skip.
-        virtual std::pair<int, int> make_move() = 0;
+        // Computes a move and plays it. (0, 0) means a skip.
+        virtual void make_move() = 0;
     };
 
     // For testing purposes. This engine randomly selects an available move.
@@ -44,15 +44,12 @@ namespace Reversi {
             std::uniform_int_distribution dist(0, 256);
             mRandomGen = std::bind(dist, mt);
             mGameMan.listen("eng", [this](int x, int y) {
-                mBoard.place(x, y);
+                if (x)
+                    mBoard.place(x, y);
+                else
+                    mBoard.skip();
                 if (mGameMan.view_board().whos_next() == mColor && mGameMan.get_result() == MatchResult::InProgress)
-                    std::thread([=]{
-                        auto eng_move = make_move();
-                        if (eng_move.first)
-                            mGameMan.place(eng_move.first, eng_move.second);
-                        else
-                            mGameMan.skip();
-                    }).detach();
+                    std::thread([this]{ make_move(); }).detach();
             });
         }
 
@@ -61,6 +58,8 @@ namespace Reversi {
         virtual void start_new(Player c) override {
             mBoard = Board();
             mColor = c;
+            if (c == Player::Black)
+                std::thread([this]{ make_move(); }).detach();
         }
 
         virtual void enter_move(int x, int y) override {
@@ -70,15 +69,16 @@ namespace Reversi {
                 mBoard.place(x, y);
         }
 
-        // Doesn't actually makes the move on the board.
-        virtual std::pair<int, int> make_move() override {
+        virtual void make_move() override {
             // Emulate a slow computation
             std::this_thread::sleep_for(std::chrono::seconds(1));
             const auto& avail = mBoard.get_placable();
-            if (avail.size())
-                return avail[mRandomGen() % avail.size()];
+            if (avail.size()) {
+                const auto [x, y] = avail[mRandomGen() % avail.size()];
+                mGameMan.place(x, y);
+            }
             else
-                return { 0, 0 };
+                mGameMan.skip();
         }
     };
 }
