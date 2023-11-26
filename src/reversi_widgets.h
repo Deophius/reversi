@@ -65,8 +65,13 @@ namespace Reversi {
     class SkipButton : public nana::button {
         // Ref to game manager
         GameMan& mGameMan;
+        // Side played by user
+        Player mColor;
     public:
-        explicit SkipButton(GameMan& mGameMan) noexcept;
+        SkipButton(nana::window handle, GameMan& gm);
+
+        // Starts a new game with this widget as a part of the side playing `c`.
+        void start_new(Player c);
     };
 }
 

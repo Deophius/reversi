@@ -112,4 +112,29 @@ namespace Reversi {
         mColor = color;
         redraw();
     }
+
+    SkipButton::SkipButton(nana::window handle, GameMan& gm) :
+        nana::button(handle), mGameMan(gm)
+    {
+        gm.listen("skipbutt", [this](int, int) {
+            enabled(mGameMan.view_board().whos_next() == mColor 
+                && mGameMan.get_result() == MatchResult::InProgress
+                && mGameMan.view_board().get_placable().size() == 0
+            );
+        });
+        events().click([this]{
+            mGameMan.skip();
+        });
+        caption("Skip");
+    }
+
+    void SkipButton::start_new(Player c) {
+        mColor = c;
+        // Possibly, the new situation on board is one where we can skip
+        // (if loaded from a file)
+        enabled(mGameMan.view_board().whos_next() == mColor 
+            && mGameMan.get_result() == MatchResult::InProgress
+            && mGameMan.view_board().get_placable().size() == 0
+        );
+    }
 }
