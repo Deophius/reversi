@@ -8,6 +8,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 link_directories(${PROJECT_SOURCE_DIR}/lib)
 
-aux_source_directory(src SOURCES)
+set(ENGINE_SRC src/board.cpp src/gameman.cpp)
+set(GUI_SRC src/reversi_widgets.cpp)
 
-add_executable(test_main test_main.cpp ${SOURCES})
+file(COPY_FILE ${CMAKE_SOURCE_DIR}/static/board.bmp ${CMAKE_BINARY_DIR}/board.bmp)
+
+add_executable(test_main test_main.cpp ${ENGINE_SRC})
+add_executable(main src/main.cpp ${ENGINE_SRC} ${GUI_SRC})
+target_compile_definitions(main PUBLIC DOCTEST_CONFIG_DISABLE)
+target_link_libraries(main nana)
