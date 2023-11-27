@@ -69,11 +69,18 @@ namespace Reversi {
         GameMan& mGameMan;
         // Side played by user
         Player mColor;
+        // True if the skips will be performed automatically
+        bool mAutoSkip = true;
     public:
         SkipButton(nana::window handle, GameMan& gm);
 
         // Starts a new game with this widget as a part of the side playing `c`.
         void start_new(Player c);
+
+        // Sets the auto skip status to `flag`
+        inline void set_auto_skip(bool flag) {
+            mAutoSkip = flag;
+        }
     };
 
     // The main window of our application
@@ -106,6 +113,12 @@ namespace Reversi {
         // game has ended.
         // The int arguments are unused.
         void check_game_result(int, int);
+
+        // Starts a new game. For use in the menu.
+        void menu_start_new_game();
+
+        // Sets the automatic skip functionality. For use in the menu
+        void menu_toggle_auto_skip(nana::menu::item_proxy& ip);
     };
 }
 

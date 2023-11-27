@@ -1,5 +1,6 @@
 #include "reversi_widgets.h"
 #include <algorithm>
+#include <iostream>
 
 namespace Reversi {
     std::pair<int, int> BoardWidget::to_board_coord(const nana::arg_mouse* arg) {
@@ -124,15 +125,18 @@ namespace Reversi {
         nana::button(handle), mGameMan(gm)
     {
         gm.listen("skipbutt", [this](int, int) {
-            enabled(mGameMan.view_board().whos_next() == mColor 
+            bool has_skip = mGameMan.view_board().whos_next() == mColor 
                 && mGameMan.get_result() == MatchResult::InProgress
-                && mGameMan.view_board().get_placable().size() == 0
-            );
+                && mGameMan.view_board().get_placable().size() == 0;
+            enabled(has_skip);
+            if (mAutoSkip && has_skip)
+                mGameMan.skip();
         });
         events().click([this]{
             mGameMan.skip();
         });
         caption("Skip");
+        tooltip("Skips your current move");
     }
 
     void SkipButton::start_new(Player c) {
@@ -164,22 +168,17 @@ namespace Reversi {
         // All our functionality will go in the menubar.
         mMenubar.push_back("&File");
         mMenubar.at(0).append("New game", [this](nana::menu::item_proxy&) {
-            using nana::msgbox;
-            auto choice = (msgbox(*this, "New game", msgbox::yes_no_cancel)
-                << "Yes for black, no for white, or cancel")
-                .show();
-            switch (choice) {
-            case msgbox::pick_yes:
-                start_new(Player::White);
-                break;
-            case msgbox::pick_no:
-                start_new(Player::Black);
-                break;
-            default:
-                msgbox("Cancelled!").show();
-                break;
-            }
+            menu_start_new_game();
         });
+        mMenubar.at(0).append("Quit", [](nana::menu::item_proxy&){
+            nana::API::exit_all();
+        });
+        mMenubar.push_back("&Game");
+        mMenubar.at(1).append("Automatic skips", [this](nana::menu::item_proxy& ip) {
+            menu_toggle_auto_skip(ip);
+        });
+        mMenubar.at(1).check_style(0, nana::menu::checks::highlight);
+        mMenubar.at(1).checked(0, true);
     }
 
     void MainWindow::start_new(Player engine_color) {
@@ -207,5 +206,24 @@ namespace Reversi {
                 (nana::msgbox(*this, "You lost!") << "Better luck next time!").show();
             break;
         }
+    }
+
+    void MainWindow::menu_start_new_game() {
+        using nana::msgbox;
+        auto choice = (msgbox(*this, "New game", msgbox::yes_no_cancel)
+            << "Yes for black, no for white, or cancel")
+            .show();
+        switch (choice) {
+        case msgbox::pick_yes:
+            start_new(Player::White);
+            break;
+        case msgbox::pick_no:
+            start_new(Player::Black);
+            break;
+        }
+    }
+
+    void MainWindow::menu_toggle_auto_skip(nana::menu::item_proxy& ip) {
+        mSkipButton.set_auto_skip(ip.checked());
     }
 }
