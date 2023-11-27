@@ -60,6 +60,14 @@ namespace Reversi {
                         mGraphContent[i][j] = Square::White;
                     }
                     break;
+                case Square::Empty:
+                    if (mGraphContent[i][j] != Square::Empty) {
+                        draw_piece(i, j, (i + j) & 1 ?
+                            // FIXME: Remove this magic "static coding"
+                            nana::color(240, 217, 181) : nana::color(181, 136, 99)
+                        );
+                        mGraphContent[i][j] = Square::Empty;
+                    }
                 }
             }
         }
