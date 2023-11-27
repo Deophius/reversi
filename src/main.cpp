@@ -1,25 +1,12 @@
 #include "reversi_widgets.h"
 #include "engi.h"
+#include <nana/gui/widgets/menubar.hpp>
+#include <nana/gui.hpp>
 
 int main() {
     using namespace Reversi;
-    nana::form fm;
-    fm.caption("Reversi");
-
-    GameMan gm;
-    BoardWidget board_widget(fm, gm, "board.bmp");
-    SkipButton skip_button(fm, gm);
-    RandomChoice engine(gm);
-    engine.start_new(Player::Black);
-    board_widget.start_new(Player::White);
-    skip_button.start_new(Player::White);
-
-    // Placer magic
-    nana::place plc(fm);
-    plc.div("<><vert weight=800 <><board weight=800><<><skip><>>><>");
-    plc["board"] << board_widget;
-    plc["skip"] << skip_button;
-    plc.collocate();
-    fm.show();
+    MainWindow mw("board.bmp");
+    mw.load_engine(std::make_unique<RandomChoice>(mw.mGameMan));
+    mw.start_new(Player::White);
     nana::exec();
 }

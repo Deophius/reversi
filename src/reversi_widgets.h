@@ -3,7 +3,9 @@
 #include <nana/gui.hpp>
 #include <nana/gui/widgets/picture.hpp>
 #include <nana/gui/widgets/button.hpp>
+#include <nana/gui/widgets/menubar.hpp>
 #include "game.h"
+#include "engi.h"
 
 namespace Reversi {
     // This widget is responsible for showing the board info.
@@ -72,6 +74,38 @@ namespace Reversi {
 
         // Starts a new game with this widget as a part of the side playing `c`.
         void start_new(Player c);
+    };
+
+    // The main window of our application
+    struct MainWindow : public nana::form {
+        // The components of the application
+        GameMan mGameMan;
+        SkipButton mSkipButton;
+        BoardWidget mBoardWidget;
+        // Menubar
+        nana::menubar mMenubar;
+        // The engine.
+        std::unique_ptr<Engine> mEngine;
+        // Placer magic
+        nana::place mPlacer;
+        // The color the engine plays
+        Player mEngineColor;
+
+        // Constructs the main window, with board img `board_img`.
+        MainWindow(const std::string& board_img);
+
+        // Loads an engine
+        inline void load_engine(std::unique_ptr<Engine> e) {
+            mEngine = std::move(e);
+        }
+
+        // Starts a new game, with engine playing `engine_color`.
+        void start_new(Player engine_color);
+
+        // Checks the results in mGameMan and launches a popup window if the
+        // game has ended.
+        // The int arguments are unused.
+        void check_game_result(int, int);
     };
 }
 

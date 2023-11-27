@@ -95,7 +95,6 @@ namespace Reversi {
         // Register our update.
         mGameMan.listen("boardwidget", [this](int x, int y){ this->update(x, y); });
         // When the user clicks, we need to respond.
-        // FIXME: Current logic is pvp.
         events().click([this](const nana::arg_click& arg) {
             if (mGameMan.view_board().whos_next() != mColor
                 || mGameMan.get_result() != MatchResult::InProgress
@@ -136,5 +135,69 @@ namespace Reversi {
             && mGameMan.get_result() == MatchResult::InProgress
             && mGameMan.view_board().get_placable().size() == 0
         );
+    }
+
+    MainWindow::MainWindow(const std::string& board_img) :
+        mSkipButton(*this, mGameMan),
+        mBoardWidget(*this, mGameMan, board_img),
+        mMenubar(*this),
+        mEngine(nullptr),
+        mPlacer(*this)
+    {
+        // Adds an event listener to display a congratulation message.
+        mGameMan.listen("congrat_msgbox", [this](int, int){ check_game_result(0, 0); });
+        // Sets GUI related stuff
+        caption("Reversi");
+        mPlacer.div("<><vert weight=800 <><board weight=800><<><skip><>>><>");
+        mPlacer["board"] << mBoardWidget;
+        mPlacer["skip"] << mSkipButton;
+        mPlacer.collocate();
+        show();
+        // All our functionality will go in the menubar.
+        mMenubar.push_back("&File");
+        mMenubar.at(0).append("New game", [this](nana::menu::item_proxy&) {
+            using nana::msgbox;
+            auto choice = (msgbox(*this, "New game", msgbox::yes_no_cancel)
+                << "Yes for black, no for white, or cancel")
+                .show();
+            switch (choice) {
+            case msgbox::pick_yes:
+                start_new(Player::White);
+                break;
+            case msgbox::pick_no:
+                start_new(Player::Black);
+                break;
+            default:
+                msgbox("Cancelled!").show();
+                break;
+            }
+        });
+    }
+
+    void MainWindow::start_new(Player engine_color) {
+        if (!mEngine) {
+            (nana::msgbox(*this, "Error starting new game") << "No engine").show();
+            return;
+        }
+        mEngineColor = engine_color;
+        mGameMan.reset();
+        mEngine->start_new(engine_color);
+        mBoardWidget.start_new(Player(1 - (unsigned char)engine_color));
+        mSkipButton.start_new(Player(1 - (unsigned char)engine_color));
+    }
+
+    void MainWindow::check_game_result(int, int) {
+        switch (mGameMan.get_result()) {
+        case MatchResult::Draw:
+            nana::msgbox(*this, "Game ended in draw").show();
+            break;
+        case MatchResult::White:
+        case MatchResult::Black:
+            if ((mGameMan.get_result() == MatchResult::Black) xor (mEngineColor == Player::Black))
+                (nana::msgbox(*this, "You win!") << "Congratulations!").show();
+            else
+                (nana::msgbox(*this, "You lost!") << "Better luck next time!").show();
+            break;
+        }
     }
 }
