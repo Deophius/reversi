@@ -71,7 +71,7 @@ namespace Reversi {
 
         virtual void make_move() override {
             // Emulate a slow computation
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
             const auto& avail = mBoard.get_placable();
             if (avail.size()) {
                 const auto [x, y] = avail[mRandomGen() % avail.size()];
