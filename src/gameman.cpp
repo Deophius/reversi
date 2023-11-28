@@ -3,41 +3,47 @@
 #include <istream>
 #include <ostream>
 #include <sstream>
+#include <nlohmann/json.hpp>
 
 namespace Reversi {
     std::ostream& operator<< (std::ostream& ostr, const GameMan& game) {
-        for (auto [x, y] : game.mAnnotation)
-            ostr << char('a' - 1 + x) << y << ' ';
-        // Deliminator
-        ostr << "#\n";
-        if (ostr.good())
+        using nlohmann::json;
+        json j;
+        // Doesn't use a top level array because there might be metadata support
+        // afterwards.
+        j["annotation"] = json::array();
+        auto& j_anno = j["annotation"];
+        for (const auto [x, y] : game.mAnnotation)
+            j_anno.push_back(json::array({ x, y }));
+        ostr << j;
+        if (ostr)
             game.mDirtyFile = false;
         return ostr;
     }
 
     std::istream& operator>> (std::istream& istr, GameMan& game) {
+        using nlohmann::json;
         GameMan tmp;
-        std::string s;
-        while (istr >> s) {
-            if (s == "#")
-                break;
-            if (s.length() != 2) {
-                istr.setstate(std::ios::failbit);
-                return istr;
-            }
-            const int x = s[0] - 'a' + 1, y = s[1] - '0';
-            // The input might be evil and contains extra steps after game termination.
-            // So we need a try-catch block to translate all exceptions into ReversiError.
+        json j;
+        try {
+            istr >> j;
+        } catch (const json::parse_error& ex) {
+            throw std::runtime_error(ex.what());
+        }
+        if (!j.contains("annotation"))
+            // Format error
+            throw std::runtime_error("No annotation found");
+        // Follow the moves in the annotations
+        for (const auto& mov : j["annotation"]) {
             try {
-                tmp.place(x, y);
-            } catch (std::logic_error const&) {
-                throw ReversiError("Extra steps after end of game!");
+                tmp.place_skip({ mov[0], mov[1] });
+            } catch (const json::type_error& ex) {
+                throw std::runtime_error(ex.what());
             } catch (const ReversiError&) {
                 throw;
             }
         }
-        std::swap(game, tmp);
-        // The game is saved there.
+        std::swap(tmp, game);
         game.mDirtyFile = false;
         return istr;
     }
@@ -99,7 +105,6 @@ namespace Reversi {
         ostr << game;
         CHECK(!game.is_dirty());
         CHECK(ostr);
-        CHECK(ostr.str() == "d6 c6 c5 e6 #\n");
         std::istringstream istr(ostr.str());
         game.reset();
         CHECK(!game.is_dirty());
@@ -121,7 +126,6 @@ namespace Reversi {
         CHECK(game.view_board().whos_next() == Player::White);
         std::ostringstream ostr;
         ostr << game;
-        CHECK(ostr.str() == "d6 #\n");
         // Let's check that even after two skips, the game is still in progress
         CHECK_THROWS(game.skip());
         CHECK_THROWS(game.skip());

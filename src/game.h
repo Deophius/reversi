@@ -121,10 +121,11 @@ namespace Reversi {
         }
 
         // Serializes the annotation to an ostream.
+        // Sets the dirty flag to false if the write is successful.
         friend std::ostream& operator<< (std::ostream& ostr, const GameMan& game);
 
         // Extracts annotation from an istream.
-        // If the read fails, sets failbit of istr; if the annotation is buggy,
+        // If the read fails, throws runtime_error; if the annotation is buggy,
         // throws ReversiError. In both cases, game is not modified.
         friend std::istream& operator>> (std::istream& istr, GameMan& game);
 

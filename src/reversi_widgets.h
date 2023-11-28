@@ -119,6 +119,15 @@ namespace Reversi {
 
         // Sets the automatic skip functionality. For use in the menu
         void menu_toggle_auto_skip(nana::menu::item_proxy& ip);
+
+        // Tries to save a game into a file picked by the user.
+        // Returns the new dirty status of the game manager's annotations.
+        // IO errors are reported via message boxes.
+        bool save_game();
+
+        // Tries to load a game. Returns true if the load is successful.
+        // If ReversiError or IO error occurs, reports them with msgbox.
+        bool load_game();
     };
 }
 

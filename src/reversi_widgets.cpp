@@ -1,6 +1,7 @@
 #include "reversi_widgets.h"
 #include <algorithm>
-#include <iostream>
+#include <fstream>
+#include <nana/gui/filebox.hpp>
 
 namespace Reversi {
     std::pair<int, int> BoardWidget::to_board_coord(const nana::arg_mouse* arg) {
@@ -136,7 +137,6 @@ namespace Reversi {
             mGameMan.skip();
         });
         caption("Skip");
-        tooltip("Skips your current move");
     }
 
     void SkipButton::start_new(Player c) {
@@ -169,6 +169,9 @@ namespace Reversi {
         mMenubar.push_back("&File");
         mMenubar.at(0).append("New game", [this](nana::menu::item_proxy&) {
             menu_start_new_game();
+        });
+        mMenubar.at(0).append("Save game", [this](nana::menu::item_proxy&) {
+            save_game();
         });
         mMenubar.at(0).append("Quit", [](nana::menu::item_proxy&){
             nana::API::exit_all();
@@ -225,5 +228,45 @@ namespace Reversi {
 
     void MainWindow::menu_toggle_auto_skip(nana::menu::item_proxy& ip) {
         mSkipButton.set_auto_skip(ip.checked());
+    }
+
+    bool MainWindow::save_game() {
+        using namespace std::string_literals;
+        const auto paths = nana::filebox(*this, false)
+            .add_filter("Reversi annotation", "*.rvs")
+            .show();
+        if (paths.size()) {
+            std::ofstream fout(paths.front());
+            fout << mGameMan;
+            if (!fout)
+                (nana::msgbox(*this, "File IO error") << "An error occurred when saving the game!")
+                    .icon(nana::msgbox::icon_error)
+                    .show();
+        }
+        return mGameMan.is_dirty();
+    }
+
+    bool MainWindow::load_game() {
+        const auto paths = nana::filebox(*this, true)
+            .add_filter("Reversi annotation", "*.rvs")
+            .show();
+        if (paths.empty())
+            return false;
+        std::ifstream fin(paths.front());
+        try {
+            fin >> mGameMan;
+        } catch (const ReversiError& ex) {
+            (nana::msgbox(*this, "Error parsing annotations") << ex.what())
+                .icon(nana::msgbox::icon_error)
+                .show();
+            return false;
+        }
+        if (!fin) {
+            (nana::msgbox(*this, "Error reading file") << "Format error.")
+                .icon(nana::msgbox::icon_error)
+                .show();
+            return false;
+        }
+        return true;
     }
 }
