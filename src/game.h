@@ -111,6 +111,9 @@ namespace Reversi {
         // Since this is a GUI application, we need to allow the user to register
         // event callbacks. In this case, when the one player makes a move.
         std::map<std::string, std::function<void(int, int)>> listeners;
+        // For saving purposes. If `annotation` has changed since the last save,
+        // this is set to true.
+        mutable bool dirty_file = false;
     public:
         // Creates a new manager instance, with annotation and board set to the initial position.
         GameMan() {
@@ -143,6 +146,9 @@ namespace Reversi {
         // If the skip is not legitimate, throws ReversiError.
         void skip();
 
+        // Places or skips (skips when (x, y) == (0, 0))
+        void place_skip(std::pair<int, int> pos);
+
         // Gets the match result.
         inline MatchResult get_result() const noexcept {
             return result;
@@ -155,6 +161,8 @@ namespace Reversi {
             board = Board();
             prev_skip = false;
             result = MatchResult::InProgress;
+            // There's no point saving the starting position
+            dirty_file = false;
         }
 
         // Adds an event listener to *this. The callback is called every time
@@ -174,6 +182,11 @@ namespace Reversi {
         // erases it from the callback list and returns true; if there isn't, simply
         // returns false.
         bool unhook(const std::string& name);
+
+        // Checks if the annotations are dirty and needs saving.
+        inline bool is_dirty() const noexcept {
+            return dirty_file;
+        }
     };
 }
 #endif

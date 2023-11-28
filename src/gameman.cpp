@@ -10,6 +10,8 @@ namespace Reversi {
             ostr << char('a' - 1 + x) << y << ' ';
         // Deliminator
         ostr << "#\n";
+        if (ostr.good())
+            game.dirty_file = false;
         return ostr;
     }
 
@@ -35,6 +37,8 @@ namespace Reversi {
             }
         }
         std::swap(game, tmp);
+        // The game is saved there.
+        game.dirty_file = false;
         return istr;
     }
 
@@ -44,6 +48,7 @@ namespace Reversi {
         if (board.is_placable(x, y)) {
             board.place(x, y);
             prev_skip = false;
+            dirty_file = true;
             for (auto&& cb : listeners)
                 cb.second(x, y);
         }
@@ -57,6 +62,7 @@ namespace Reversi {
         if (board.get_placable().size())
             throw ReversiError("Illegal skip");
         board.skip();
+        dirty_file = true;
         // If this is the second skip in a row, count and sets the game result.
         if (prev_skip) {
             result = board.count();
@@ -64,6 +70,13 @@ namespace Reversi {
         prev_skip = true;
         for (auto&& cb : listeners)
             cb.second(0, 0);
+    }
+
+    void GameMan::place_skip(std::pair<int, int> pos) {
+        if (pos.first)
+            place(pos.first, pos.second);
+        else
+            skip();
     }
 
     bool GameMan::listen(std::string name, std::function<void(int, int)> cb) {
@@ -76,16 +89,22 @@ namespace Reversi {
 
     TEST_CASE("serialization") {
         GameMan game;
+        CHECK(!game.is_dirty());
         game.place(4, 6);
         game.place(3, 6);
         game.place(3, 5);
         game.place(5, 6);
+        CHECK(game.is_dirty());
         std::ostringstream ostr;
         ostr << game;
+        CHECK(!game.is_dirty());
         CHECK(ostr);
         CHECK(ostr.str() == "d6 c6 c5 e6 #\n");
         std::istringstream istr(ostr.str());
+        game.reset();
+        CHECK(!game.is_dirty());
         istr >> game;
+        CHECK(!game.is_dirty());
         CHECK(istr);
         CHECK(game.view_board()(5, 5) == Square::White);
     }
