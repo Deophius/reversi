@@ -8,24 +8,24 @@ namespace Reversi {
         const int partit = ((MAX_FILES + 2) * x + y) & 3;
         switch (partit) {
         case 0:
-            squares[subscript] &= 0xFC;
-            squares[subscript] |= static_cast<unsigned char>(sq);
+            mSquares[subscript] &= 0xFC;
+            mSquares[subscript] |= static_cast<unsigned char>(sq);
             break;
         case 1:
-            squares[subscript] &= 0xF3;
-            squares[subscript] |= static_cast<unsigned char>(sq) << 2;
+            mSquares[subscript] &= 0xF3;
+            mSquares[subscript] |= static_cast<unsigned char>(sq) << 2;
             break;
         case 2:
-            squares[subscript] &= 0xCF;
-            squares[subscript] |= static_cast<unsigned char>(sq) << 4;
+            mSquares[subscript] &= 0xCF;
+            mSquares[subscript] |= static_cast<unsigned char>(sq) << 4;
             break;
         case 3:
-            squares[subscript] &= 0x3F;
-            squares[subscript] |= static_cast<unsigned char>(sq) << 6;
+            mSquares[subscript] &= 0x3F;
+            mSquares[subscript] |= static_cast<unsigned char>(sq) << 6;
         }
     }
 
-    Board::Board() noexcept : squares{0}, piece_cnt(4), next_player(Player::Black) {
+    Board::Board() noexcept : mSquares{0}, mNextPlayer(Player::Black) {
         set(4, 4, Square::Black);
         set(5, 5, Square::Black);
         set(4, 5, Square::White);
@@ -36,14 +36,14 @@ namespace Reversi {
             set(i, 0, Square::OutOfRange);
             set(i, MAX_FILES + 1, Square::OutOfRange);
         }
-        placable_cache.reserve(MAX_FILES * MAX_RANK);
+        mPlacableCache.reserve(MAX_FILES * MAX_RANK);
         update_placable_cache();
     }
 
     Square Board::operator() (int x, int y) const noexcept {
         const int sub = (x * (MAX_FILES + 2) + y) >> 2;
         const int partit = (x * (MAX_FILES + 2) + y) & 3;
-        return Square((squares[sub] >> (partit << 1)) & 3);
+        return Square((mSquares[sub] >> (partit << 1)) & 3);
     }
 
     Square Board::at(int x, int y) const noexcept {
@@ -82,8 +82,8 @@ namespace Reversi {
     bool Board::is_placable(int x, int y) const noexcept {
         static constexpr int dx[] = { -1, 0, 1, -1, 1, -1, 0, 1 };
         static constexpr int dy[] = { -1, -1, -1, 0, 0, 1, 1, 1 };
-        const Square opponent = next_player == Player::Black ? Square::White : Square::Black;
-        const Square player = next_player == Player::Black ? Square::Black : Square::White;
+        const Square opponent = mNextPlayer == Player::Black ? Square::White : Square::Black;
+        const Square player = mNextPlayer == Player::Black ? Square::Black : Square::White;
         // If (x, y) is out of range, returns here.
         if (at(x, y) != Square::Empty)
             return false;
@@ -108,15 +108,15 @@ namespace Reversi {
     }
 
     void Board::update_placable_cache() {
-        placable_cache.clear();
+        mPlacableCache.clear();
         for (int i = 1; i <= MAX_FILES; i++)
             for (int j = 1; j <= MAX_RANK; j++)
                 if (is_placable(i, j))
-                    placable_cache.push_back({ i, j });
+                    mPlacableCache.push_back({ i, j });
     }
 
     std::vector<std::pair<int, int>> const& Board::get_placable() const {
-        return placable_cache;
+        return mPlacableCache;
     }
 
     TEST_CASE("placable") {
@@ -135,8 +135,8 @@ namespace Reversi {
             throw std::out_of_range("place argument out of range");
         static constexpr int dx[] = { -1, 0, 1, -1, 1, -1, 0, 1 };
         static constexpr int dy[] = { -1, -1, -1, 0, 0, 1, 1, 1 };
-        const Square opponent = next_player == Player::Black ? Square::White : Square::Black;
-        const Square player = next_player == Player::Black ? Square::Black : Square::White;
+        const Square opponent = mNextPlayer == Player::Black ? Square::White : Square::Black;
+        const Square player = mNextPlayer == Player::Black ? Square::Black : Square::White;
         for (int k = 0; k < 8; k++) {
             int currx = x + dx[k], curry = y + dy[k];
             // Since dx[] and dy[] have abs value <= 1, even if (currx, curry)

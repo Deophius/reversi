@@ -38,14 +38,12 @@ namespace Reversi {
     private:
         constexpr static int ARR_SIZE = ((MAX_RANK + 2) * (MAX_FILES + 2) * 2 + 7) / 8;
         // Compressed array of the squares
-        std::array<unsigned char, ARR_SIZE> squares;
-        // The number of pieces on the board
-        unsigned char piece_cnt;
+        std::array<unsigned char, ARR_SIZE> mSquares;
         // The next player to play
-        Player next_player;
+        Player mNextPlayer;
         // Caches the result of get_placable(). It's a responsiblity of all methods
         // that can modify the board to keep this up to date.
-        std::vector<std::pair<int, int>> placable_cache;
+        std::vector<std::pair<int, int>> mPlacableCache;
 
         // Sets (x, y) to sq.
         // No range checking.
@@ -83,7 +81,7 @@ namespace Reversi {
         // Skips the current player's turn.
         // Doesn't check that the skip is legitimate.
         inline void skip() noexcept {
-            next_player = static_cast<Player>(1 - static_cast<unsigned char>(next_player));
+            mNextPlayer = static_cast<Player>(1 - static_cast<unsigned char>(mNextPlayer));
             update_placable_cache();
         }
 
@@ -93,7 +91,7 @@ namespace Reversi {
 
         // Returns the next player to play
         inline Player whos_next() const noexcept {
-            return next_player;
+            return mNextPlayer;
         }
     };
 
@@ -101,25 +99,25 @@ namespace Reversi {
     class GameMan {
         // The steps from the beginning of the game till now.
         // (0, 0) means a skip.
-        std::vector<std::pair<int, int>> annotation;
+        std::vector<std::pair<int, int>> mAnnotation;
         // Invariant: board is consistent with annotation
-        Board board;
+        Board mBoard;
         // true if the previous move is a skip
-        bool prev_skip;
+        bool mPrevSkip;
         // The match result
-        MatchResult result;
+        MatchResult mResult;
         // Since this is a GUI application, we need to allow the user to register
         // event callbacks. In this case, when the one player makes a move.
-        std::map<std::string, std::function<void(int, int)>> listeners;
+        std::map<std::string, std::function<void(int, int)>> mListeners;
         // For saving purposes. If `annotation` has changed since the last save,
         // this is set to true.
-        mutable bool dirty_file = false;
+        mutable bool mDirtyFile = false;
     public:
         // Creates a new manager instance, with annotation and board set to the initial position.
         GameMan() {
-            annotation.reserve(Board::MAX_FILES * Board::MAX_RANK * 2);
+            mAnnotation.reserve(Board::MAX_FILES * Board::MAX_RANK * 2);
             reset();
-            listen("annotator", [this](int x, int y){ this->annotation.push_back({ x, y }); });
+            listen("annotator", [this](int x, int y){ this->mAnnotation.push_back({ x, y }); });
         }
 
         // Serializes the annotation to an ostream.
@@ -132,7 +130,7 @@ namespace Reversi {
 
         // Returns a const ref to the board since that couldn't violate our invariant
         inline const Board& view_board() const noexcept {
-            return board;
+            return mBoard;
         }
 
         // Places a piece at (x, y).
@@ -151,18 +149,18 @@ namespace Reversi {
 
         // Gets the match result.
         inline MatchResult get_result() const noexcept {
-            return result;
+            return mResult;
         }
 
         // Resets the board to initial state and clears the annotation.
         // Note that callbacks are not deleted.
         inline void reset() noexcept {
-            annotation.clear();
-            board = Board();
-            prev_skip = false;
-            result = MatchResult::InProgress;
+            mAnnotation.clear();
+            mBoard = Board();
+            mPrevSkip = false;
+            mResult = MatchResult::InProgress;
             // There's no point saving the starting position
-            dirty_file = false;
+            mDirtyFile = false;
         }
 
         // Adds an event listener to *this. The callback is called every time
@@ -185,7 +183,7 @@ namespace Reversi {
 
         // Checks if the annotations are dirty and needs saving.
         inline bool is_dirty() const noexcept {
-            return dirty_file;
+            return mDirtyFile;
         }
     };
 }

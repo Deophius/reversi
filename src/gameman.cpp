@@ -6,12 +6,12 @@
 
 namespace Reversi {
     std::ostream& operator<< (std::ostream& ostr, const GameMan& game) {
-        for (auto [x, y] : game.annotation)
+        for (auto [x, y] : game.mAnnotation)
             ostr << char('a' - 1 + x) << y << ' ';
         // Deliminator
         ostr << "#\n";
         if (ostr.good())
-            game.dirty_file = false;
+            game.mDirtyFile = false;
         return ostr;
     }
 
@@ -38,18 +38,18 @@ namespace Reversi {
         }
         std::swap(game, tmp);
         // The game is saved there.
-        game.dirty_file = false;
+        game.mDirtyFile = false;
         return istr;
     }
 
     void GameMan::place(int x, int y) {
         if (get_result() != MatchResult::InProgress)
             throw std::logic_error("Operations after end of game");
-        if (board.is_placable(x, y)) {
-            board.place(x, y);
-            prev_skip = false;
-            dirty_file = true;
-            for (auto&& cb : listeners)
+        if (mBoard.is_placable(x, y)) {
+            mBoard.place(x, y);
+            mPrevSkip = false;
+            mDirtyFile = true;
+            for (auto&& cb : mListeners)
                 cb.second(x, y);
         }
         else
@@ -59,16 +59,16 @@ namespace Reversi {
     void GameMan::skip() {
         if (get_result() != MatchResult::InProgress)
             throw std::logic_error("Operations after end of game");
-        if (board.get_placable().size())
+        if (mBoard.get_placable().size())
             throw ReversiError("Illegal skip");
-        board.skip();
-        dirty_file = true;
+        mBoard.skip();
+        mDirtyFile = true;
         // If this is the second skip in a row, count and sets the game result.
-        if (prev_skip) {
-            result = board.count();
+        if (mPrevSkip) {
+            mResult = mBoard.count();
         }
-        prev_skip = true;
-        for (auto&& cb : listeners)
+        mPrevSkip = true;
+        for (auto&& cb : mListeners)
             cb.second(0, 0);
     }
 
@@ -80,11 +80,11 @@ namespace Reversi {
     }
 
     bool GameMan::listen(std::string name, std::function<void(int, int)> cb) {
-        return listeners.insert({ std::move(name), std::move(cb) }).second;
+        return mListeners.insert({ std::move(name), std::move(cb) }).second;
     }
 
     bool GameMan::unhook(const std::string& name) {
-        return listeners.erase(name);
+        return mListeners.erase(name);
     }
 
     TEST_CASE("serialization") {
