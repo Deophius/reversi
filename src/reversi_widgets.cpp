@@ -233,7 +233,8 @@ namespace Reversi {
     bool MainWindow::save_game() {
         using namespace std::string_literals;
         const auto paths = nana::filebox(*this, false)
-            .add_filter("Reversi annotation", "*.rvs")
+            .add_filter("Reversi annotation (*.rvs)", "*.rvs")
+            .add_filter("JSON (*.json)", "*.json")
             .show();
         if (paths.size()) {
             std::ofstream fout(paths.front());
@@ -257,6 +258,11 @@ namespace Reversi {
             fin >> mGameMan;
         } catch (const ReversiError& ex) {
             (nana::msgbox(*this, "Error parsing annotations") << ex.what())
+                .icon(nana::msgbox::icon_error)
+                .show();
+            return false;
+        } catch (const std::runtime_error& ex) {
+            (nana::msgbox(*this, "Broken file") << ex.what())
                 .icon(nana::msgbox::icon_error)
                 .show();
             return false;
