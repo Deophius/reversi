@@ -2,84 +2,94 @@
 #ifndef REVERSI_ENGI_H
 #define REVERSI_ENGI_H
 #include "game.h"
-#include <random>
 #include <chrono>
 #include <functional>
 #include <thread>
+#include <future>
+#include <condition_variable>
 
 namespace Reversi {
-    // An interface for the engine.
+    // An interface for the async engine.
     class Engine {
+        // The semaphore that is given by the main thread.
+        // Exit is only set by the dtor of the class.
+        // Compute means the manager wants to the engine to compute the next move.
+        // By design the manager thread should be asleep when computation is being
+        // carried out.
+        enum class Sema {
+            None, Exit, Compute
+        } mSemaphore = Sema::None;
     protected:
-        // Reference to the game manager.
-        GameMan& mGameMan;
+        // The board, accessible by derived classes.
+        Board mBoard;
+        // The promise where the result of do_make_move() should be put. Because the
+        // UIE needs to move this into 
+        std::promise<std::pair<int, int>> mPromise;
+    private:
+        // The mutex guards mPromise, mSemaphore and mBoard.
+        std::mutex mMutex;
+        // This condition variable works with mMutex.
+        // The thread that runs mainloop() waits on this cond var for notification
+        // from the manager's thread.
+        std::condition_variable mCondVar;
+        // The thread handle to the main thread (as opposed to worker threads
+        // derived classes may spawn).
+        std::thread mThread;
+
+        // The mainloop of the thread. Waits on the condition var to handle cmds.
+        // I don't think there's any way to override this correctly.
+        void mainloop();
+
+        // important: Customization point
+        // Computes the move and puts it into the promise held by mPromise.
+        // Ran by the thread owned by this class. This function can safely access
+        // the members protected by the class's mutex.
+        virtual void do_make_move() = 0;
+
     public:
-        Engine(GameMan& gm) noexcept : mGameMan(gm) {}
+        // Constructs the engine, launching the main thread.
+        Engine();
 
-        // Virtual destructors
-        virtual ~Engine() noexcept = default;
+        // Prohibit copying and moving.
+        Engine(const Engine&) = delete;
 
-        // Starts a new game, with the engine playing `color` side.
-        // GameMan calls this after resetting its board.
-        virtual void start_new(Player color) = 0;
+        Engine& operator= (const Engine&) = delete;
+
+        Engine(Engine&&) = delete;
+
+        Engine& operator= (Engine&&) = delete;
+
+        // Virtual destructor. Joins the thread handle, so it's very important
+        // to set this as a virtual function.
+        virtual ~Engine() noexcept;
 
         // Enter opponent's move. Since the engine should be wrapped inside
         // some interface, the input should be legal.
         // (0, 0) means a skip.
-        // GameMan also calls this after its board is updated.
-        virtual void enter_move(int x, int y) = 0;
+        // This should be called by the game manager thread.
+        void enter_move(int x, int y);
 
-        // Computes a move and plays it. (0, 0) means a skip.
-        virtual void make_move() = 0;
+        // (Game manager thread) The position changed so much that it's
+        // simpler to pass in a brand new board.
+        void change_position(Board new_pos);
+
+        // (Game manager thread) Requests computation of next move.
+        // The result is obtained by the future associated with the promise
+        // moved in.
+        void request_compute(std::promise<std::pair<int, int>> prom);
     };
 
     // For testing purposes. This engine randomly selects an available move.
     class RandomChoice : public Engine {
-        Board mBoard;
-        Player mColor;
-        std::function<int()> mRandomGen;
+        std::function<std::size_t()> mRandomGen;
+
+        // Overrides the customization point
+        virtual void do_make_move() override;
     public:
-        RandomChoice(GameMan& gm) : Engine(gm) {
-            std::mt19937 mt(std::chrono::system_clock::now().time_since_epoch().count());
-            std::uniform_int_distribution dist(0, 256);
-            mRandomGen = std::bind(dist, mt);
-            mGameMan.listen("eng", [this](int x, int y) {
-                if (x)
-                    mBoard.place(x, y);
-                else
-                    mBoard.skip();
-                if (mGameMan.view_board().whos_next() == mColor && mGameMan.get_result() == MatchResult::InProgress)
-                    std::thread([this]{ make_move(); }).detach();
-            });
-        }
+        // Default constructor.
+        RandomChoice();
 
         virtual ~RandomChoice() noexcept = default;
-
-        virtual void start_new(Player c) override {
-            mBoard = Board();
-            mColor = c;
-            if (c == Player::Black)
-                std::thread([this]{ make_move(); }).detach();
-        }
-
-        virtual void enter_move(int x, int y) override {
-            if (x == 0 && y == 0)
-                mBoard.skip();
-            else
-                mBoard.place(x, y);
-        }
-
-        virtual void make_move() override {
-            // Emulate a slow computation
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            const auto& avail = mBoard.get_placable();
-            if (avail.size()) {
-                const auto [x, y] = avail[mRandomGen() % avail.size()];
-                mGameMan.place(x, y);
-            }
-            else
-                mGameMan.skip();
-        }
     };
 }
 
