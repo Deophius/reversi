@@ -48,9 +48,9 @@ namespace Reversi {
                         break;
                     // The game is still in progress, we can proceed to the next move.
                     if (mBoard.whos_next() == Player::White)
-                        mWhiteSide->request_compute(weak_from_this(), mGameID);
+                        mWhiteSide->request_compute(mGameID);
                     else
-                        mBlackSide->request_compute(weak_from_this(), mGameID);
+                        mBlackSide->request_compute(mGameID);
                 }
             }
         }
@@ -81,11 +81,15 @@ namespace Reversi {
     void GameMan::load_black_engine(std::unique_ptr<Engine> e) {
         std::lock_guard lk(mMutex);
         mBlackSide = std::move(e);
+        if (mBlackSide)
+            mBlackSide->link_game_man(weak_from_this());
     }
 
     void GameMan::load_white_engine(std::unique_ptr<Engine> e) {
         std::lock_guard lk(mMutex);
         mWhiteSide = std::move(e);
+        if (mWhiteSide)
+            mWhiteSide->link_game_man(weak_from_this());
     }
 
     void GameMan::start_new() {
@@ -100,7 +104,7 @@ namespace Reversi {
         mPrevSkip = mDirty = false;
         ++mGameID;
         mGameInProgress = true;
-        mBlackSide->request_compute(weak_from_this(), mGameID);
+        mBlackSide->request_compute(mGameID);
     }
 
     void GameMan::enter_move(std::pair<int, int> mov, unsigned char gid) {
@@ -128,6 +132,6 @@ namespace Reversi {
             return;
         mGameInProgress = true;
         (mBoard.whos_next() == Player::Black ? mBlackSide : mWhiteSide)
-            ->request_compute(weak_from_this(), mGameID);
+            ->request_compute(mGameID);
     }
 }

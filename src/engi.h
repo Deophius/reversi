@@ -86,11 +86,14 @@ namespace Reversi {
 
         // (Game manager thread) Requests computation of next move.
         // This doesn't block.
-        void request_compute(std::weak_ptr<GameMan> gm, unsigned char gid);
+        void request_compute(unsigned char gid);
 
         // (Game man) Requests cancellation of current or the next computation.
         // This does not block.
         void request_cancel();
+
+        // (Game man) links to a game manager.
+        void link_game_man(std::weak_ptr<GameMan> gm);
     };
 
     // For testing purposes. This engine randomly selects an available move.
