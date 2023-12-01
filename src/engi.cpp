@@ -6,6 +6,7 @@ namespace Reversi {
     Engine::Engine() : mThread(&Engine::mainloop, this) {}
 
     Engine::~Engine() noexcept {
+        std::cerr << "~Engine()\n";
         // First we notify the thread to exit
         {
             std::lock_guard lk(mMutex);
@@ -26,8 +27,10 @@ namespace Reversi {
             // semaphore == Sema::compute
             try {
                 auto result = do_make_move();
-                mGameMan->enter_move(result, mGameID);
-                std::cerr << "Engine access manager\n";
+                if (!mCancel.load(std::memory_order_acquire)) {
+                    mGameMan->enter_move(result, mGameID);
+                    std::cerr << "Engine access manager\n";
+                }
             } catch (OperationCanceled) {
             }
             // Reset the flags

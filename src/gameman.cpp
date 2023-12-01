@@ -24,6 +24,9 @@ namespace Reversi {
                     mDirty = true;
                     mAnnotation.emplace_back(x, y);
                     // We need to inform both sides of the last move.
+                    // Because we hold the engines as unique pointers, and we're still
+                    // running in the joining thread, we infer that the dtor hasn't
+                    // finished running and the engines haven't been destructed.
                     mWhiteSide->enter_move({ x, y });
                     mBlackSide->enter_move({ x, y });
                     std::cerr << "Manager access engine\n";
@@ -65,6 +68,7 @@ namespace Reversi {
     }
 
     GameMan::~GameMan() noexcept {
+        std::cerr << "~GameMan()\n";
         {
             std::lock_guard lk(mMutex);
             mSemaQueue.push(0);
@@ -72,17 +76,16 @@ namespace Reversi {
         }
         mCondVar.notify_one();
         mThread.join();
-        std::cerr << "GameMan thread has joined\n";
     }
 
-    void GameMan::load_black_engine(Engine* e) {
+    void GameMan::load_black_engine(std::unique_ptr<Engine> e) {
         std::lock_guard lk(mMutex);
-        mBlackSide = e;
+        mBlackSide = std::move(e);
     }
 
-    void GameMan::load_white_engine(Engine* e) {
+    void GameMan::load_white_engine(std::unique_ptr<Engine> e) {
         std::lock_guard lk(mMutex);
-        mWhiteSide = e;
+        mWhiteSide = std::move(e);
     }
 
     void GameMan::start_new() {

@@ -110,7 +110,7 @@ namespace Reversi {
         // true if the previous move is a skip
         bool mPrevSkip = false;
         // The two engines that play against each other
-        Engine *mWhiteSide = nullptr, *mBlackSide = nullptr;
+        std::unique_ptr<Engine> mWhiteSide, mBlackSide;
         // Keeps track if *this has been modified after the last save.
         bool mDirty = false;
         // An incrementing count of games played. This is used to distinguish
@@ -165,11 +165,11 @@ namespace Reversi {
 
         // Loads the white engine and returns the previous engine.
         // Must be called when there's no game in progress.
-        void load_white_engine(Engine* e);
+        void load_white_engine(std::unique_ptr<Engine> e);
 
         // Loads the black engine and returns the previous one.
         // Must be called when there's no game in progress.
-        void load_black_engine(Engine* e);
+        void load_black_engine(std::unique_ptr<Engine> e);
 
         // (GUI thread)
         // Starts a new game in the mainloop.
