@@ -101,7 +101,7 @@ namespace Reversi {
     class MainWindow;
 
     // Manager of a game
-    class GameMan {
+    class GameMan : public std::enable_shared_from_this<GameMan> {
         // The steps from the beginning of the game till now.
         // (0, 0) means a skip.
         std::vector<std::pair<int, int>> mAnnotation;
@@ -143,9 +143,14 @@ namespace Reversi {
 
         // The mainloop of mThread.
         void mainloop();
+
+        struct PrivateTag {};
+
     public:
+        GameMan(MainWindow& mw, PrivateTag);
+
         // Constructs a new game manager linked to the main window `mw`.
-        GameMan(MainWindow& mw);
+        static std::shared_ptr<GameMan> create(MainWindow& mw);
 
         // Disallow copying and moving
         GameMan(const GameMan&) = delete;

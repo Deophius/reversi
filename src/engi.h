@@ -23,7 +23,7 @@ namespace Reversi {
         // The game id passed in by `request_computation()`.
         unsigned char mGameID = 0;
         // The pointer to game manager passed in by request_computation.
-        GameMan* mGameMan = nullptr;
+        std::shared_ptr<GameMan> mGameMan;
     protected:
         // The board, accessible by derived classes.
         Board mBoard;
@@ -86,7 +86,7 @@ namespace Reversi {
 
         // (Game manager thread) Requests computation of next move.
         // This doesn't block.
-        void request_compute(GameMan* gm, unsigned char gid);
+        void request_compute(std::shared_ptr<GameMan> gm, unsigned char gid);
 
         // (Game man) Requests cancellation of current or the next computation.
         // This does not block.

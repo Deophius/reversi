@@ -1,6 +1,7 @@
 #include "game.h"
 #include "engi.h"
 #include "reversi_widgets.h"
+#include <iostream>
 
 namespace Reversi {
     void GameMan::mainloop() {
@@ -25,6 +26,7 @@ namespace Reversi {
                     // We need to inform both sides of the last move.
                     mWhiteSide->enter_move({ x, y });
                     mBlackSide->enter_move({ x, y });
+                    std::cerr << "Manager access engine\n";
                     if (x) {
                         mBoard.place(x, y);
                         mPrevSkip = false;
@@ -43,25 +45,34 @@ namespace Reversi {
                         break;
                     // The game is still in progress, we can proceed to the next move.
                     if (mBoard.whos_next() == Player::White)
-                        mWhiteSide->request_compute(this, mGameID);
+                        mWhiteSide->request_compute(shared_from_this(), mGameID);
                     else
-                        mBlackSide->request_compute(this, mGameID);
+                        mBlackSide->request_compute(shared_from_this(), mGameID);
                 }
             }
         }
     }
 
-    GameMan::GameMan(MainWindow& mw) : mMainWindow(mw), mThread(&GameMan::mainloop, this) {
+    GameMan::GameMan(MainWindow& mw, PrivateTag) :
+        mMainWindow(mw), mThread(&GameMan::mainloop, this),
+        mWhiteSide(nullptr), mBlackSide(nullptr)
+    {
         mAnnotation.reserve(128);
+    }
+
+    std::shared_ptr<GameMan> GameMan::create(MainWindow& mw) {
+        return std::make_shared<GameMan>(mw, PrivateTag());
     }
 
     GameMan::~GameMan() noexcept {
         {
             std::lock_guard lk(mMutex);
             mSemaQueue.push(0);
+            mGameInProgress = false;
         }
         mCondVar.notify_one();
         mThread.join();
+        std::cerr << "GameMan thread has joined\n";
     }
 
     void GameMan::load_black_engine(Engine* e) {
@@ -86,7 +97,7 @@ namespace Reversi {
         mPrevSkip = mDirty = false;
         ++mGameID;
         mGameInProgress = true;
-        mBlackSide->request_compute(this, mGameID);
+        mBlackSide->request_compute(shared_from_this(), mGameID);
     }
 
     void GameMan::enter_move(std::pair<int, int> mov, unsigned char gid) {
@@ -114,6 +125,6 @@ namespace Reversi {
             return;
         mGameInProgress = true;
         (mBoard.whos_next() == Player::Black ? mBlackSide : mWhiteSide)
-            ->request_compute(this, mGameID);
+            ->request_compute(shared_from_this(), mGameID);
     }
 }

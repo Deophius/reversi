@@ -1,5 +1,6 @@
 #include "engi.h"
 #include <random>
+#include <iostream>
 
 namespace Reversi {
     Engine::Engine() : mThread(&Engine::mainloop, this) {}
@@ -12,6 +13,7 @@ namespace Reversi {
         }
         mCondVar.notify_one();
         mThread.join();
+        std::cerr << "Engine thread joined\n";
     }
 
     void Engine::mainloop() {
@@ -23,7 +25,9 @@ namespace Reversi {
                 break;
             // semaphore == Sema::compute
             try {
-                mGameMan->enter_move(do_make_move(), mGameID);
+                auto result = do_make_move();
+                mGameMan->enter_move(result, mGameID);
+                std::cerr << "Engine access manager\n";
             } catch (OperationCanceled) {
             }
             // Reset the flags
@@ -45,7 +49,7 @@ namespace Reversi {
         mBoard = std::move(new_pos);
     }
 
-    void Engine::request_compute(GameMan* gm, unsigned char gid) {
+    void Engine::request_compute(std::shared_ptr<GameMan> gm, unsigned char gid) {
         {
             std::lock_guard lk(mMutex);
             mCancel.store(false, std::memory_order_release);

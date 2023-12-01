@@ -81,7 +81,7 @@ namespace Reversi {
     }
 
     MainWindow::MainWindow(const std::string& board_img) :
-        mGameMan(*this),
+        mGameMan(GameMan::create(*this)),
         mSkipButton(*this),
         mBoardWidget(*this, board_img),
         mMenubar(*this),

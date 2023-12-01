@@ -69,7 +69,7 @@ namespace Reversi {
     // The main window of our application
     struct MainWindow : public nana::form {
         // The components of the application
-        GameMan mGameMan;
+        std::shared_ptr<GameMan> mGameMan;
         SkipButton mSkipButton;
         BoardWidget mBoardWidget;
         // Menubar
