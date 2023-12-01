@@ -28,10 +28,22 @@ namespace Reversi {
             try {
                 auto result = do_make_move();
                 if (!mCancel.load(std::memory_order_acquire)) {
-                    mGameMan->enter_move(result, mGameID);
+                    // important: Thread safety
+                    // Case 1: exception thrown
+                    //   This means that the shared pointer to the manager has been destroyed,
+                    //   so mSemaphore will never == Sema::Compute.
+                    //   But since we're still running, so ~Engine() hasn't finished (join blocks),
+                    //   so the next time the thread wakes up, it will find mSemaphore == Sema::Exit
+                    //   and terminate. So there is no dangling pointer.
+                    // Case 2: exception not thrown
+                    //   Then we have a shared pointer that prevents the manager from being destroyed.
+                    //   This means it's safe to access the manager.
+                    std::shared_ptr<GameMan>(mGameMan)->enter_move(result, mGameID);
                     std::cerr << "Engine access manager\n";
                 }
             } catch (OperationCanceled) {
+            } catch (const std::bad_weak_ptr&) {
+                // The related object has already been destructed.
             }
             // Reset the flags
             mCancel.store(false, std::memory_order_release);
@@ -52,7 +64,7 @@ namespace Reversi {
         mBoard = std::move(new_pos);
     }
 
-    void Engine::request_compute(std::shared_ptr<GameMan> gm, unsigned char gid) {
+    void Engine::request_compute(std::weak_ptr<GameMan> gm, unsigned char gid) {
         {
             std::lock_guard lk(mMutex);
             mCancel.store(false, std::memory_order_release);
