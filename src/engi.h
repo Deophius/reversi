@@ -6,6 +6,7 @@
 #include <functional>
 #include <thread>
 #include <future>
+#include <atomic>
 #include <condition_variable>
 
 namespace Reversi {
@@ -19,14 +20,22 @@ namespace Reversi {
         enum class Sema {
             None, Exit, Compute
         } mSemaphore = Sema::None;
+        // The game id passed in by `request_computation()`.
+        unsigned char mGameID = 0;
+        // The pointer to game manager passed in by request_computation.
+        GameMan* mGameMan = nullptr;
     protected:
         // The board, accessible by derived classes.
         Board mBoard;
-        // The promise where the result of do_make_move() should be put. Because the
-        // UIE needs to move this into 
-        std::promise<std::pair<int, int>> mPromise;
+        // Atomic bool that signals a cancellation.
+        // We can't use the mutex for sync because the mutex is held by the class
+        // thread when computation is being done.
+        std::atomic_bool mCancel = false;
+
+        // Interesting exception that can be used to cancel the do_make_move().
+        struct OperationCanceled {};
     private:
-        // The mutex guards mPromise, mSemaphore and mBoard.
+        // The mutex guards mSemaphore and mBoard, mGameID and mGameMan
         std::mutex mMutex;
         // This condition variable works with mMutex.
         // The thread that runs mainloop() waits on this cond var for notification
@@ -41,10 +50,12 @@ namespace Reversi {
         void mainloop();
 
         // important: Customization point
-        // Computes the move and puts it into the promise held by mPromise.
+        // Computes the move.
         // Ran by the thread owned by this class. This function can safely access
         // the members protected by the class's mutex.
-        virtual void do_make_move() = 0;
+        // The function should be aware that a cancellation request may come at any
+        // time and should respect that by throwing OperationCanceled.
+        virtual std::pair<int, int> do_make_move() = 0;
 
     public:
         // Constructs the engine, launching the main thread.
@@ -63,20 +74,23 @@ namespace Reversi {
         // to set this as a virtual function.
         virtual ~Engine() noexcept;
 
-        // Enter opponent's move. Since the engine should be wrapped inside
+        // Enter a move. Since the engine should be wrapped inside
         // some interface, the input should be legal.
         // (0, 0) means a skip.
         // This should be called by the game manager thread.
-        void enter_move(int x, int y);
+        void enter_move(std::pair<int, int> mov);
 
         // (Game manager thread) The position changed so much that it's
         // simpler to pass in a brand new board.
         void change_position(Board new_pos);
 
         // (Game manager thread) Requests computation of next move.
-        // The result is obtained by the future associated with the promise
-        // moved in.
-        void request_compute(std::promise<std::pair<int, int>> prom);
+        // This doesn't block.
+        void request_compute(GameMan* gm, unsigned char gid);
+
+        // (Game man) Requests cancellation of current or the next computation.
+        // This does not block.
+        void request_cancel();
     };
 
     // For testing purposes. This engine randomly selects an available move.
@@ -84,7 +98,7 @@ namespace Reversi {
         std::function<std::size_t()> mRandomGen;
 
         // Overrides the customization point
-        virtual void do_make_move() override;
+        virtual std::pair<int, int> do_make_move() override;
     public:
         // Default constructor.
         RandomChoice();

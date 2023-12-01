@@ -1,11 +1,12 @@
-#ifndef REVERSI_BOARD_H
-#define REVERSI_BOARD_H
+#ifndef REVERSI_GAME_H
+#define REVERSI_GAME_H
 #include <array>
-#include <iosfwd>
+#include <mutex>
 #include <stdexcept>
 #include <vector>
-#include <functional>
-#include <map>
+#include <thread>
+#include <memory>
+#include <queue>
 
 namespace Reversi {
     // Friendly enum representation of the status of a square
@@ -95,6 +96,10 @@ namespace Reversi {
         }
     };
 
+    // interface fwd
+    class Engine;
+    class MainWindow;
+
     // Manager of a game
     class GameMan {
         // The steps from the beginning of the game till now.
@@ -103,89 +108,81 @@ namespace Reversi {
         // Invariant: board is consistent with annotation
         Board mBoard;
         // true if the previous move is a skip
-        bool mPrevSkip;
-        // The match result
-        MatchResult mResult;
-        // Since this is a GUI application, we need to allow the user to register
-        // event callbacks. In this case, when the one player makes a move.
-        std::map<std::string, std::function<void(int, int)>> mListeners;
-        // For saving purposes. If `annotation` has changed since the last save,
-        // this is set to true.
-        mutable bool mDirtyFile = false;
+        bool mPrevSkip = false;
+        // The two engines that play against each other
+        Engine *mWhiteSide = nullptr, *mBlackSide = nullptr;
+        // Keeps track if *this has been modified after the last save.
+        bool mDirty = false;
+        // An incrementing count of games played. This is used to distinguish
+        // between different games.
+        unsigned char mGameID = 0;
+        // true if a game is in progress. This is used by the mainloop to determine
+        // whether to get more moves from the engine.
+        bool mGameInProgress = false;
+        // The main GUI window. We have to take the responsibility to redraw the
+        // GUI because the GUI thread is blocked by exec() waiting for events.
+        // FIXME: Current impl doesn't contain call to GUI functions.
+        MainWindow& mMainWindow;
+        // The game manager thread.
+        std::thread mThread;
+        // Commands are sent here. The least significant 8 bits are the command.
+        // Available:
+        //   0 -- Exit the thread
+        //   1 -- Cancel engine computation, for example, to start a new game, or
+        //        to load a new position. (unimplemented!)
+        //   2 -- Starts asking the engines to compute the move and push the game
+        //        forward, automatically drawing the GUI (unimplemented!)
+        //   3 -- (sent by engines) x = 9~16 bits, y = 17~24bits, places at (x, y)
+        //        game id = 25~32 bits
+        std::queue<unsigned int> mSemaQueue;
+        // Mutex that protects almost everything in this class.
+        std::mutex mMutex;
+        // Condition variable to notify the mainloop thread when there are new
+        // entries in the queue to process.
+        std::condition_variable mCondVar;
+
+        // The mainloop of mThread.
+        void mainloop();
     public:
-        // Creates a new manager instance, with annotation and board set to the initial position.
-        GameMan() {
-            mAnnotation.reserve(Board::MAX_FILES * Board::MAX_RANK * 2);
-            reset();
-            listen("annotator", [this](int x, int y){ this->mAnnotation.push_back({ x, y }); });
-        }
+        // Constructs a new game manager linked to the main window `mw`.
+        GameMan(MainWindow& mw);
 
-        // Serializes the annotation to an ostream.
-        // Sets the dirty flag to false if the write is successful.
-        friend std::ostream& operator<< (std::ostream& ostr, const GameMan& game);
+        // Disallow copying and moving
+        GameMan(const GameMan&) = delete;
 
-        // Extracts annotation from an istream.
-        // If the read fails, throws runtime_error; if the annotation is buggy,
-        // throws ReversiError. In both cases, game is not modified.
-        friend std::istream& operator>> (std::istream& istr, GameMan& game);
+        GameMan(GameMan&&) = delete;
 
-        // Returns a const ref to the board since that couldn't violate our invariant
-        inline const Board& view_board() const noexcept {
-            return mBoard;
-        }
+        GameMan& operator= (const GameMan&) = delete;
 
-        // Places a piece at (x, y).
-        // If get_result() != InProgress, throws std::logic_error.
-        // If the board thinks (x, y) is not placable (including out of range), throws ReversiError.
-        void place(int x, int y);
+        GameMan& operator= (GameMan&&) = delete;
 
-        // Skips the current player's turn.
-        // On the second consecutive call to skip(), sets match result.
-        // If get_result() != InProgress, throws std::logic_error.
-        // If the skip is not legitimate, throws ReversiError.
-        void skip();
+        virtual ~GameMan() noexcept;
 
-        // Places or skips (skips when (x, y) == (0, 0))
-        void place_skip(std::pair<int, int> pos);
+        // Loads the white engine and returns the previous engine.
+        // Must be called when there's no game in progress.
+        void load_white_engine(Engine* e);
 
-        // Gets the match result.
-        inline MatchResult get_result() const noexcept {
-            return mResult;
-        }
+        // Loads the black engine and returns the previous one.
+        // Must be called when there's no game in progress.
+        void load_black_engine(Engine* e);
 
-        // Resets the board to initial state and clears the annotation.
-        // Note that callbacks are not deleted.
-        inline void reset() noexcept {
-            mAnnotation.clear();
-            mBoard = Board();
-            mPrevSkip = false;
-            mResult = MatchResult::InProgress;
-            // There's no point saving the starting position
-            mDirtyFile = false;
-        }
+        // (GUI thread)
+        // Starts a new game in the mainloop.
+        // If any side doesn't have an engine loaded, throws Reversi error.
+        void start_new();
 
-        // Adds an event listener to *this. The callback is called every time
-        // one side makes a move or skips.
-        //
-        // The callback should receive (x, y), the previous move played as argument.
-        // It's assumed that the callback can access *this in some way, so *this is
-        // not provided as part of the argument.
-        // As usual, if it's a skip, then (0, 0) is passed in.
-        //
-        // For easy unregistration, a name is required for every listener.
-        // If the `name` is already used, the new callback isn't registered, and
-        // the method returns `false`. Otherwise returns `true`.
-        bool listen(std::string name, std::function<void(int, int)> cb);
+        // (Engine thread)
+        // Enters the next move.
+        void enter_move(std::pair<int, int> mov, unsigned char game_id);
 
-        // Unregisters a listener referred to by `name`. If there is such a listener,
-        // erases it from the callback list and returns true; if there isn't, simply
-        // returns false.
-        bool unhook(const std::string& name);
+        // (GUI thread)
+        // Pauses the current game. Increments the game id counter to refuse
+        // input from the engines.
+        void pause_game();
 
-        // Checks if the annotations are dirty and needs saving.
-        inline bool is_dirty() const noexcept {
-            return mDirtyFile;
-        }
+        // (GUI thread)
+        // Resumes the current game.
+        void resume_game();
     };
 }
 #endif

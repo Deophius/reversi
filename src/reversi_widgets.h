@@ -10,9 +10,6 @@
 namespace Reversi {
     // This widget is responsible for showing the board info.
     class BoardWidget : public nana::picture {
-        // The reference to the game manager
-        GameMan& mGameMan;
-
         // The size of each square
         const int mSquareSize;
 
@@ -43,39 +40,25 @@ namespace Reversi {
         // Draws a cross at (x, y) with color c, as the "last move indicator"
         void draw_cross(int x, int y, nana::color c);
 
-        // Updates the GUI widget according to data from mGameMan.
-        // The last move was (x, y)
-        void update(int x, int y);
-
-        // Redraws the GUI widget. This should be used when a new game is started.
-        // Doesn't draw the last move indicator.
-        void redraw();
     public:
         // Constructs the board widget with the handle and associated game manager.
         // The board is loaded from a bitmap file named by `file_name`.
         // The size of each square in pixels is sq_size.
-        BoardWidget(nana::window handle, GameMan& gm, const std::string& file_name, int sq_size = 100);
+        BoardWidget(nana::window handle, const std::string& file_name, int sq_size = 100);
 
         virtual ~BoardWidget() noexcept = default;
 
-        // Starts a new game and the user plays the side with color c.
-        // Expects that the associated GameMan has been reset prior to this call.
-        void start_new(Player color);
+        // Updates the GUI widget according to data passed in
+        // The last move was (x, y)
+        void update(const Board& b, int x, int y);
     };
 
     // The skip button.
     class SkipButton : public nana::button {
-        // Ref to game manager
-        GameMan& mGameMan;
-        // Side played by user
-        Player mColor;
         // True if the skips will be performed automatically
         bool mAutoSkip = true;
     public:
-        SkipButton(nana::window handle, GameMan& gm);
-
-        // Starts a new game with this widget as a part of the side playing `c`.
-        void start_new(Player c);
+        SkipButton(nana::window handle);
 
         // Sets the auto skip status to `flag`
         inline void set_auto_skip(bool flag) {
@@ -91,8 +74,6 @@ namespace Reversi {
         BoardWidget mBoardWidget;
         // Menubar
         nana::menubar mMenubar;
-        // The engine.
-        std::unique_ptr<Engine> mEngine;
         // Placer magic
         nana::place mPlacer;
         // The color the engine plays
@@ -101,18 +82,8 @@ namespace Reversi {
         // Constructs the main window, with board img `board_img`.
         MainWindow(const std::string& board_img);
 
-        // Loads an engine
-        inline void load_engine(std::unique_ptr<Engine> e) {
-            mEngine = std::move(e);
-        }
-
-        // Starts a new game, with engine playing `engine_color`.
-        void start_new(Player engine_color);
-
-        // Checks the results in mGameMan and launches a popup window if the
-        // game has ended.
-        // The int arguments are unused.
-        void check_game_result(int, int);
+        // Broadcasts the result.
+        void announce_game_result(MatchResult res);
 
         // Starts a new game. For use in the menu.
         void menu_start_new_game();
@@ -120,14 +91,9 @@ namespace Reversi {
         // Sets the automatic skip functionality. For use in the menu
         void menu_toggle_auto_skip(nana::menu::item_proxy& ip);
 
-        // Tries to save a game into a file picked by the user.
-        // Returns the new dirty status of the game manager's annotations.
-        // IO errors are reported via message boxes.
-        bool save_game();
-
-        // Tries to load a game. Returns true if the load is successful.
-        // If ReversiError or IO error occurs, reports them with msgbox.
-        bool load_game();
+        // Updates the GUI according to the board b. The last move was
+        // given to draw the cross.
+        void update_board(const Board& b, std::pair<int, int> last_move);
     };
 }
 

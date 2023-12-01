@@ -1,4 +1,5 @@
 #include "engi.h"
+#include <random>
 
 namespace Reversi {
     Engine::Engine() : mThread(&Engine::mainloop, this) {}
@@ -21,14 +22,20 @@ namespace Reversi {
             if (mSemaphore == Sema::Exit)
                 break;
             // semaphore == Sema::compute
-            do_make_move();
+            try {
+                mGameMan->enter_move(do_make_move(), mGameID);
+            } catch (OperationCanceled) {
+            }
+            // Reset the flags
+            mCancel.store(false, std::memory_order_release);
+            mSemaphore = Sema::None;
         }
     }
 
-    void Engine::enter_move(int x, int y) {
+    void Engine::enter_move(std::pair<int, int> mov) {
         std::lock_guard lk(mMutex);
-        if (x && y)
-            mBoard.place(x, y);
+        if (mov.first)
+            mBoard.place(mov.first, mov.second);
         else
             mBoard.skip();
     }
@@ -38,20 +45,31 @@ namespace Reversi {
         mBoard = std::move(new_pos);
     }
 
-    void Engine::request_compute(std::promise<std::pair<int, int>> prom) {
+    void Engine::request_compute(GameMan* gm, unsigned char gid) {
         {
             std::lock_guard lk(mMutex);
-            mPromise = std::move(prom);
+            mCancel.store(false, std::memory_order_release);
+            mGameID = gid;
+            mGameMan = gm;
             mSemaphore = Sema::Compute;
         }
         mCondVar.notify_one();
     }
 
-    void RandomChoice::do_make_move() {
-        mPromise.set_value(
-            mBoard.get_placable().size() ?
+    void Engine::request_cancel() {
+        mCancel.store(true, std::memory_order_release);
+    }
+
+    RandomChoice::RandomChoice() {
+        std::mt19937 mt;
+        std::uniform_int_distribution dist(0, 256);
+        mRandomGen = std::bind(dist, mt);
+    }
+
+    std::pair<int, int> RandomChoice::do_make_move() {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        return mBoard.get_placable().size() ?
             mBoard.get_placable().at(mRandomGen() % mBoard.get_placable().size()) :
-            std::pair(0, 0)
-        );
+            std::pair(0, 0);
     }
 }
