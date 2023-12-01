@@ -90,9 +90,11 @@ namespace Reversi {
     }
 
     void GameMan::enter_move(std::pair<int, int> mov, unsigned char gid) {
-        std::lock_guard lk(mMutex);
+        std::unique_lock lk(mMutex);
         if (gid == mGameID) {
             mSemaQueue.push(3 + (mov.first << 8) + (mov.second << 16) + ((unsigned)(gid) << 24));
+            lk.unlock();
+            mCondVar.notify_one();
         }
     }
 
