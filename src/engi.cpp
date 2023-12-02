@@ -89,7 +89,7 @@ namespace Reversi {
     }
 
     std::pair<int, int> RandomChoice::do_make_move() {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(400));
         return mBoard.get_placable().size() ?
             mBoard.get_placable().at(mRandomGen() % mBoard.get_placable().size()) :
             std::pair(0, 0);

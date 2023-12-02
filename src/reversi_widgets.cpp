@@ -104,7 +104,10 @@ namespace Reversi {
                 std::lock_guard lk(mPromMutex);
                 mUIProm.set_value();
             } catch (const std::future_error&) {
-                // do nothing
+                // The UIE isn't loaded or it's not waiting for a skip. Inform the user.
+                (nana::msgbox("Not now") << "You can't skip now!")
+                    .icon(nana::msgbox::icon_information)
+                    .show();
             }
         });
     }
