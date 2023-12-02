@@ -75,6 +75,15 @@ namespace Reversi {
             (unsigned)sq_size * 8
         })
     {
+        events().click([this](const nana::arg_click& arg) {
+            try {
+                std::lock_guard lk(mPromMutex);
+                mUIProm.set_value(to_board_coord(arg.mouse_args));
+            } catch (const std::future_error&) {
+                // This means that there is no active request waiting for the click.
+                // Just ignore it.
+            }
+        });
         mBoardImage.stretch(
             nana::rectangle{ {0, 0}, mBoardImage.size() },
             mGraphics,
@@ -83,8 +92,75 @@ namespace Reversi {
         update(Board(), 0, 0);
     }
 
+    void BoardWidget::listen_click(std::promise<std::pair<int, int>> prom) {
+        std::lock_guard lk(mPromMutex);
+        mUIProm = std::move(prom);
+    }
+
     SkipButton::SkipButton(nana::window handle) : nana::button(handle) {
         caption("Skip");
+        events().click([this]{
+            try {
+                std::lock_guard lk(mPromMutex);
+                mUIProm.set_value();
+            } catch (const std::future_error&) {
+                // do nothing
+            }
+        });
+    }
+
+    void SkipButton::listen_click(std::promise<void> prom) {
+        std::lock_guard lk(mPromMutex);
+        mUIProm = std::move(prom);
+    }
+
+    UserInputEngine::UserInputEngine(BoardWidget& bw, SkipButton& skb) :
+        mBoardWidget(bw), mSkipButton(skb)
+    {}
+
+    std::pair<int, int> UserInputEngine::do_make_move() {
+        using namespace std::chrono_literals;
+        // We can safely access mBoard since it's protected by the mutex
+        if (mBoard.get_placable().size()) {
+            // Hand off the promise to the board. Since the board might return
+            // invalid data, we need to get a loop.
+            while (true) {
+                std::promise<std::pair<int, int>> prom;
+                auto fut = prom.get_future();
+                mBoardWidget.listen_click(std::move(prom));
+                // Check for cancel requests every 100ms
+                while (fut.wait_for(100ms) == std::future_status::timeout) {
+                    if (mCancel.load(std::memory_order_acquire))
+                        throw OperationCanceled();
+                }
+                // Now the future is "ready".
+                // The manager is destroyed before the widgets, so the engine
+                // is destroyed before the widgets, so this doesn't throw
+                // abandoned_promise.
+                auto result = fut.get();
+                // Check if this is a legal move
+                if (std::find(mBoard.get_placable().cbegin(), mBoard.get_placable().cend(),
+                    result) != mBoard.get_placable().cend()
+                ) {
+                    return result;
+                }
+                // This move is not legal. We tell the board widget to keep on listening.
+            }
+        } else {
+            if (mSkipButton.get_auto_skip())
+                return {0, 0};
+            // Hand off the promise to the skip button.
+            std::promise<void> prom;
+            auto fut = prom.get_future();
+            mSkipButton.listen_click(std::move(prom));
+            while (fut.wait_for(100ms) == std::future_status::timeout) {
+                // Check for explicit cancel requests every 100ms
+                if (mCancel.load(std::memory_order_acquire))
+                    throw OperationCanceled();
+            }
+            // Now the future is ready, which means the user has clicked the button
+            return { 0, 0 };
+        }
     }
 
     MainWindow::MainWindow(const std::string& board_img) :

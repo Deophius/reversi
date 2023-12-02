@@ -7,6 +7,9 @@ namespace Reversi {
 
     Engine::~Engine() noexcept {
         std::cerr << "~Engine()\n";
+        // The thread might be busying computing or waiting for GUI input
+        // in do_make_move. First cancel that.
+        mCancel.store(true, std::memory_order_release);
         // First we notify the thread to exit
         {
             std::lock_guard lk(mMutex);
@@ -70,13 +73,13 @@ namespace Reversi {
         mCondVar.notify_one();
     }
 
+    void Engine::request_cancel() {
+        mCancel.store(true, std::memory_order_release);
+    }
+
     void Engine::link_game_man(std::weak_ptr<GameMan> gm) {
         std::lock_guard lk(mMutex);
         mGameMan = gm;
-    }
-
-    void Engine::request_cancel() {
-        mCancel.store(true, std::memory_order_release);
     }
 
     RandomChoice::RandomChoice() {

@@ -6,6 +6,7 @@
 #include <nana/gui/widgets/menubar.hpp>
 #include "game.h"
 #include "engi.h"
+#include <future>
 
 namespace Reversi {
     // This widget is responsible for showing the board info.
@@ -27,6 +28,14 @@ namespace Reversi {
 
         // The color the user plays
         Player mColor;
+
+        // Used to push data to the user input engine. Reuses are detected by
+        // the exception thrown by set_value.
+        std::promise<std::pair<int, int>> mUIProm;
+
+        // As the name implies, the mutex protects only mUIProm and synchronizes
+        // the engine thread and the GUI thread.
+        std::mutex mPromMutex;
 
         // Helper function to convert the pixel language to board language.
         std::pair<int, int> to_board_coord(const nana::arg_mouse* arg);
@@ -51,27 +60,60 @@ namespace Reversi {
         // Updates the GUI widget according to data passed in
         // The last move was (x, y)
         void update(const Board& b, int x, int y);
+
+        // Sends in a promise for the click.
+        void listen_click(std::promise<std::pair<int, int>> prom);
     };
 
     // The skip button.
     class SkipButton : public nana::button {
         // True if the skips will be performed automatically
-        bool mAutoSkip = true;
+        std::atomic_bool mAutoSkip = true;
+
+        // To communicate with the user input engine
+        std::promise<void> mUIProm;
+
+        // Protects mUIProm
+        std::mutex mPromMutex;
     public:
         SkipButton(nana::window handle);
 
         // Sets the auto skip status to `flag`
-        inline void set_auto_skip(bool flag) {
-            mAutoSkip = flag;
+        inline void set_auto_skip(bool flag) noexcept {
+            mAutoSkip.store(flag, std::memory_order_release);
         }
+
+        // Queries the autoskip.
+        inline bool get_auto_skip() const noexcept {
+            return mAutoSkip.load(std::memory_order_acquire);
+        }
+
+        // Sets the promise.
+        void listen_click(std::promise<void> prom);
+    };
+
+    // The user input engine that combines the skip button and the board.
+    class UserInputEngine : public Engine {
+        // Links to the two widgets.
+        BoardWidget& mBoardWidget;
+        SkipButton& mSkipButton;
+
+        virtual std::pair<int, int> do_make_move() override;
+
+    public:
+        UserInputEngine(BoardWidget& bw, SkipButton& skb);
+
+        virtual ~UserInputEngine() noexcept = default;
     };
 
     // The main window of our application
     struct MainWindow : public nana::form {
         // The components of the application
-        std::shared_ptr<GameMan> mGameMan;
         SkipButton mSkipButton;
         BoardWidget mBoardWidget;
+        // Important: Let the game manager be destroyed first, since its mainloop
+        // potentially accesses the two control widgets.
+        std::shared_ptr<GameMan> mGameMan;
         // Menubar
         nana::menubar mMenubar;
         // Placer magic
