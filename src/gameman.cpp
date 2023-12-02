@@ -106,6 +106,7 @@ namespace Reversi {
         mPrevSkip = mDirty = false;
         ++mGameID;
         mGameInProgress = true;
+        mMainWindow.update_board(mBoard, {0, 0});
         mBlackSide->request_compute(mGameID);
     }
 

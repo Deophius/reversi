@@ -211,7 +211,27 @@ namespace Reversi {
     }
 
     void MainWindow::menu_start_new_game() {
-        nana::msgbox("Unimplemented!").show();
+        auto picked = (nana::msgbox(*this, "New game", nana::msgbox::yes_no_cancel)
+            << "Yes for black, no for white")
+            .icon(nana::msgbox::icon_question)
+            .show();
+        if (picked == nana::msgbox::pick_cancel)
+            return;
+        // Otherwise a new game is indeed started.
+        mGameMan->pause_game();
+        if (picked == nana::msgbox::pick_yes) {
+            // GUI plays black
+            mGameMan->load_black_engine(
+                std::make_unique<UserInputEngine>(mBoardWidget, mSkipButton)
+            );
+            mGameMan->load_white_engine(std::make_unique<RandomChoice>());
+        } else {
+            mGameMan->load_white_engine(
+                std::make_unique<UserInputEngine>(mBoardWidget, mSkipButton)
+            );
+            mGameMan->load_black_engine(std::make_unique<RandomChoice>());
+        }
+        mGameMan->start_new();
     }
 
     void MainWindow::menu_toggle_auto_skip(nana::menu::item_proxy& ip) {
