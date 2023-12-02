@@ -36,7 +36,6 @@ namespace Reversi {
                     //   Then we have a shared pointer that prevents the manager from being destroyed.
                     //   This means it's safe to access the manager.
                     std::shared_ptr<GameMan>(mGameMan)->enter_move(result, mGameID);
-                    std::cerr << "Engine access manager\n";
                 }
             } catch (OperationCanceled) {
             } catch (const std::bad_weak_ptr&) {
@@ -81,7 +80,7 @@ namespace Reversi {
     }
 
     RandomChoice::RandomChoice() {
-        std::mt19937 mt;
+        std::mt19937 mt(std::chrono::system_clock::now().time_since_epoch().count());
         std::uniform_int_distribution dist(0, 256);
         mRandomGen = std::bind(dist, mt);
     }

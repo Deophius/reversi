@@ -29,7 +29,6 @@ namespace Reversi {
                     // finished running and the engines haven't been destructed.
                     mWhiteSide->enter_move({ x, y });
                     mBlackSide->enter_move({ x, y });
-                    std::cerr << "Manager access engine\n";
                     if (x) {
                         mBoard.place(x, y);
                         mPrevSkip = false;
@@ -44,6 +43,9 @@ namespace Reversi {
                         mBoard.skip();
                         mPrevSkip = true;
                     }
+                    // Since manager is contained in the MainWindow structure,
+                    // it's safe to call the GUI process.
+                    mMainWindow.update_board(mBoard, { x, y });
                     if (!mGameInProgress)
                         break;
                     // The game is still in progress, we can proceed to the next move.

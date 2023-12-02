@@ -74,7 +74,14 @@ namespace Reversi {
             (unsigned)sq_size * 8,
             (unsigned)sq_size * 8
         })
-    {}
+    {
+        mBoardImage.stretch(
+            nana::rectangle{ {0, 0}, mBoardImage.size() },
+            mGraphics,
+            nana::rectangle{ {0, 0}, mGraphics.size() }
+        );
+        update(Board(), 0, 0);
+    }
 
     SkipButton::SkipButton(nana::window handle) : nana::button(handle) {
         caption("Skip");
@@ -130,5 +137,9 @@ namespace Reversi {
 
     void MainWindow::menu_toggle_auto_skip(nana::menu::item_proxy& ip) {
         mSkipButton.set_auto_skip(ip.checked());
+    }
+
+    void MainWindow::update_board(const Board& b, std::pair<int, int> last_move) {
+        mBoardWidget.update(b, last_move.first, last_move.second);
     }
 }
