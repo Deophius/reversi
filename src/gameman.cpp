@@ -137,4 +137,23 @@ namespace Reversi {
         (mBoard.whos_next() == Player::Black ? mBlackSide : mWhiteSide)
             ->request_compute(mGameID);
     }
+
+    bool GameMan::is_dirty() {
+        std::lock_guard lk(mMutex);
+        return mDirty;
+    }
+
+    nlohmann::json GameMan::to_json() {
+        std::lock_guard lk(mMutex);
+        using nlohmann::json;
+        json ans;
+        ans["annotation"] = json::array();
+        for (const auto& [x, y] : mAnnotation)
+            ans["annotation"].push_back(json::array({ x, y }));
+        ans["black"] = mBlackSide->get_name();
+        ans["white"] = mWhiteSide->get_name();
+        // Since we have saved, the game is no longer dirty
+        mDirty = false;
+        return ans;
+    }
 }

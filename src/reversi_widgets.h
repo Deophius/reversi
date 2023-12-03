@@ -138,6 +138,14 @@ namespace Reversi {
         // Updates the GUI according to the board b. The last move was
         // given to draw the cross.
         void update_board(const Board& b, std::pair<int, int> last_move);
+
+        // If the associated game manager's annotation is dirty, asks the user
+        // whether to save it.
+        // Returns true if the user decides to save the game.
+        bool ask_for_save();
+
+        // Saves the game in a file the user selects.
+        void save_game();
     };
 }
 

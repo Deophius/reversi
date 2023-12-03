@@ -189,6 +189,9 @@ namespace Reversi {
         mMenubar.at(0).append("New game", [this](nana::menu::item_proxy&) {
             menu_start_new_game();
         });
+        mMenubar.at(0).append("Save game", [this](nana::menu::item_proxy&) {
+            save_game();
+        });
         mMenubar.at(0).append("Quit", [](nana::menu::item_proxy&){
             nana::API::exit_all();
         });
@@ -215,6 +218,8 @@ namespace Reversi {
     }
 
     void MainWindow::menu_start_new_game() {
+        if (ask_for_save())
+            save_game();
         auto picked = (nana::msgbox(*this, "New game", nana::msgbox::yes_no_cancel)
             << "Yes for black, no for white")
             .icon(nana::msgbox::icon_question)
@@ -244,5 +249,23 @@ namespace Reversi {
 
     void MainWindow::update_board(const Board& b, std::pair<int, int> last_move) {
         mBoardWidget.update(b, last_move.first, last_move.second);
+    }
+
+    bool MainWindow::ask_for_save() {
+        if (!mGameMan->is_dirty())
+            return false;
+        return (nana::msgbox(*this, "Save file?", nana::msgbox::yes_no)
+            << "Your game has changed, do you want to save it?")
+            .icon(nana::msgbox::icon_question)
+            .show() == nana::msgbox::pick_yes;
+    }
+
+    void MainWindow::save_game() {
+        // Unconditionally save
+        auto paths = nana::filebox(*this, false).show();
+        if (paths.empty())
+            return;
+        std::ofstream fout(paths.front());
+        fout << mGameMan->to_json();
     }
 }

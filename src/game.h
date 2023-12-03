@@ -7,6 +7,7 @@
 #include <thread>
 #include <memory>
 #include <queue>
+#include <nlohmann/json.hpp>
 
 namespace Reversi {
     // Friendly enum representation of the status of a square
@@ -121,7 +122,6 @@ namespace Reversi {
         bool mGameInProgress = false;
         // The main GUI window. We have to take the responsibility to redraw the
         // GUI because the GUI thread is blocked by exec() waiting for events.
-        // FIXME: Current impl doesn't contain call to GUI functions.
         MainWindow& mMainWindow;
         // The game manager thread.
         std::thread mThread;
@@ -188,6 +188,12 @@ namespace Reversi {
         // (GUI thread)
         // Resumes the current game.
         void resume_game();
+
+        // Checks if the game needs saving. (GUI thread)
+        bool is_dirty();
+
+        // (GUI) Loads the annotation and info about the two sides into a JSON.
+        nlohmann::json to_json();
     };
 }
 #endif
