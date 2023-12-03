@@ -166,6 +166,10 @@ namespace Reversi {
         }
     }
 
+    std::string UserInputEngine::get_name() {
+        return "UserInputEngine";
+    }
+
     MainWindow::MainWindow(const std::string& board_img) :
         mGameMan(GameMan::create(*this)),
         mSkipButton(*this),

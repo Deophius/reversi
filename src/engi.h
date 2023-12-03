@@ -94,6 +94,11 @@ namespace Reversi {
 
         // (Game man) links to a game manager.
         void link_game_man(std::weak_ptr<GameMan> gm);
+
+        // important: Customization point.
+        // Returns the name of the type. (Some sort of manual RTTI)
+        // Cannot be set to static function since this needs to access the vtable.
+        virtual std::string get_name() = 0;
     };
 
     // For testing purposes. This engine randomly selects an available move.
@@ -107,6 +112,8 @@ namespace Reversi {
         RandomChoice();
 
         virtual ~RandomChoice() noexcept = default;
+
+        virtual std::string get_name() override;
     };
 }
 

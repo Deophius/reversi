@@ -104,6 +104,8 @@ namespace Reversi {
         UserInputEngine(BoardWidget& bw, SkipButton& skb);
 
         virtual ~UserInputEngine() noexcept = default;
+
+        virtual std::string get_name() override;
     };
 
     // The main window of our application

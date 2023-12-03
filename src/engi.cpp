@@ -94,4 +94,8 @@ namespace Reversi {
             mBoard.get_placable().at(mRandomGen() % mBoard.get_placable().size()) :
             std::pair(0, 0);
     }
+    
+    std::string RandomChoice::get_name() {
+        return "RandomChoice";
+    }
 }
