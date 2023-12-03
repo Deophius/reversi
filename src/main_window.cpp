@@ -37,6 +37,11 @@ namespace Reversi {
         });
         mMenubar.at(1).check_style(0, nana::menu::checks::highlight);
         mMenubar.at(1).checked(0, true);
+        // When the window closes, asks the user to save.
+        events().unload([this](const nana::arg_unload& arg) {
+            if (ask_for_save())
+                save_game();
+        });
     }
 
     void MainWindow::announce_game_result(MatchResult res) {
