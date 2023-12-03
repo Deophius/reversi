@@ -132,6 +132,9 @@ namespace Reversi {
         // Starts a new game. For use in the menu.
         void menu_start_new_game();
 
+        // Loads a game chosen in the filebox. For use in the menu.
+        void menu_load_game();
+
         // Sets the automatic skip functionality. For use in the menu
         void menu_toggle_auto_skip(nana::menu::item_proxy& ip);
 

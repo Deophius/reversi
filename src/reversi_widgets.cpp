@@ -192,6 +192,9 @@ namespace Reversi {
         mMenubar.at(0).append("Save game", [this](nana::menu::item_proxy&) {
             save_game();
         });
+        mMenubar.at(0).append("Load game", [this](nana::menu::item_proxy&) {
+            menu_load_game();
+        });
         mMenubar.at(0).append("Quit", [](nana::menu::item_proxy&){
             nana::API::exit_all();
         });
@@ -241,6 +244,33 @@ namespace Reversi {
             mGameMan->load_black_engine(std::make_unique<RandomChoice>());
         }
         mGameMan->start_new();
+    }
+
+    void MainWindow::menu_load_game() {
+        if (ask_for_save())
+            save_game();
+        auto paths = nana::filebox(*this, true).show();
+        if (paths.empty())
+            // user cancelled.
+            return;
+        nlohmann::json js;
+        try {
+            std::ifstream fin(paths[0]);
+            fin >> js;
+        } catch (const std::exception& ex) {
+            (nana::msgbox(*this, "Error reading file") << ex.what())
+                .icon(nana::msgbox::icon_error)
+                .show();
+            return;
+        }
+        try {
+            mGameMan->from_json(js);
+        } catch (const ReversiError& ex) {
+            (nana::msgbox(*this, "Error parsing file content") << ex.what())
+                .icon(nana::msgbox::icon_error)
+                .show();
+            return;
+        }
     }
 
     void MainWindow::menu_toggle_auto_skip(nana::menu::item_proxy& ip) {

@@ -156,4 +156,67 @@ namespace Reversi {
         mDirty = false;
         return ans;
     }
+
+    // Helper function that constructs a new std::unique_ptr<Engine> that points
+    // to an object of the correct derived type of Engine.
+    // Throws ReversiError if the engine's name isn't recognized.
+    static std::unique_ptr<Engine> make_engine_from_description(
+        const std::string& name, MainWindow& mw
+    ) {
+        if (name == "RandomChoice")
+            return std::make_unique<RandomChoice>();
+        if (name == "UserInputEngine")
+            return std::make_unique<UserInputEngine>(mw.mBoardWidget, mw.mSkipButton);
+        throw ReversiError("Unrecognized engine type: " + name);
+    }
+
+    void GameMan::read_annotation(const nlohmann::json& js) {
+        using nlohmann::json;
+        using namespace std::string_literals;
+        try {
+            Board b;
+            std::vector<std::pair<int, int>> anno;
+            anno.reserve(js.at("annotation").size());
+            for (const auto& move : js["annotation"]) {
+                anno.emplace_back(move[0], move[1]);
+                if (move[0] == 0 && move[1] == 0) {
+                    if (b.get_placable().size())
+                        throw ReversiError("Invalid skip in annotation!");
+                    b.skip();
+                } else {
+                    if (!b.is_placable(move[0], move[1]))
+                        throw ReversiError("Invalid place in annotation");
+                    b.place(move[0], move[1]);
+                }
+            }
+            // If we have survivied until now, that means the data is OK.
+            pause_game();
+            // Acquire the lock just to be safe.
+            std::lock_guard lk(mMutex);
+            mBoard = std::move(b);
+            mAnnotation = std::move(anno);
+        } catch (const json::exception& ex) {
+            throw ReversiError("Error parsing JSON: "s + ex.what());
+        }
+    }
+
+    void GameMan::from_json(const nlohmann::json& js) {
+        using namespace std::string_literals;
+        std::unique_ptr<Engine> new_black, new_white;
+        try {
+            new_black = make_engine_from_description(js.at("black"), mMainWindow);
+            new_white = make_engine_from_description(js.at("white"), mMainWindow);
+        } catch (const nlohmann::json::exception& ex) {
+            throw ReversiError("Error parsing JSON: "s + ex.what());
+        }
+        read_annotation(js);
+        // The game is now paused and the board and the annotation have been updated.
+        load_black_engine(std::move(new_black));
+        load_white_engine(std::move(new_white));
+        // Let's ignore the possibility of these functions throwing.
+        mMainWindow.update_board(mBoard, {0, 0});
+        mWhiteSide->change_position(mBoard);
+        mBlackSide->change_position(mBoard);
+        resume_game();
+    }
 }

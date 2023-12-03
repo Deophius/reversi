@@ -146,6 +146,14 @@ namespace Reversi {
 
         struct PrivateTag {};
 
+        // Parses the annotation passed in and updates the annotation and board.
+        // This doesn't automatically start the new game. Also doesn't update the
+        // engines according to the JSON.
+        //
+        // If the annotation contains errors, they are reported via ReversiError. The
+        // mBoard and mAnnotation of *this aren't changed.
+        void read_annotation(const nlohmann::json& js);
+
     public:
         GameMan(MainWindow& mw, PrivateTag);
 
@@ -194,6 +202,13 @@ namespace Reversi {
 
         // (GUI) Loads the annotation and info about the two sides into a JSON.
         nlohmann::json to_json();
+
+        // (GUI) Loads the annotation and engines from the JSON, and starts a
+        // new game from that.
+        //
+        // If errors are detected, reports them by throwing ReversiError. The
+        // original data members are not changed.
+        void from_json(const nlohmann::json& js);
     };
 }
 #endif
