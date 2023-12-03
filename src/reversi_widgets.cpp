@@ -249,7 +249,10 @@ namespace Reversi {
     void MainWindow::menu_load_game() {
         if (ask_for_save())
             save_game();
-        auto paths = nana::filebox(*this, true).show();
+        auto paths = nana::filebox(*this, true)
+            .add_filter("Reversi game (*.json)", "*.json")
+            .add_filter("All files (*.*)", "*.*")
+            .show();
         if (paths.empty())
             // user cancelled.
             return;
@@ -290,9 +293,27 @@ namespace Reversi {
             .show() == nana::msgbox::pick_yes;
     }
 
+    // Gets the default file name when saving.
+    static inline std::string get_def_name() {
+        using std::chrono::system_clock;
+        using namespace std::literals;
+        std::time_t now_time = system_clock::to_time_t(system_clock::now());
+        std::tm* now_tm = std::localtime(&now_time);
+        char buf[16];
+        if (strftime(buf, sizeof(buf), "%m-%d-%H%M%S", now_tm) == 0) {
+            nana::msgbox("Buffer not large enough in get_def_name()").show();
+            std::terminate();
+        }
+        return "game"s + buf + ".json";
+    }
+
     void MainWindow::save_game() {
         // Unconditionally save
-        auto paths = nana::filebox(*this, false).show();
+        auto paths = nana::filebox(*this, false)
+            .add_filter("Reversi game (*.json)", "*.json")
+            .add_filter("All files (*.*)", "*.*")
+            .init_file(get_def_name())
+            .show();
         if (paths.empty())
             return;
         std::ofstream fout(paths.front());
