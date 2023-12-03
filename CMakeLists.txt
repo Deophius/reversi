@@ -9,7 +9,8 @@ set(CMAKE_CXX_FLAGS -g)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 link_directories(${PROJECT_SOURCE_DIR}/lib)
 
-set(ENGINE_SRC src/board.cpp src/gameman.cpp src/engi.cpp src/reversi_widgets.cpp)
+set(ENGINE_SRC src/board.cpp src/gameman.cpp src/engi.cpp src/reversi_widgets.cpp
+    src/main_window.cpp)
 
 file(COPY_FILE ${CMAKE_SOURCE_DIR}/static/board.bmp ${CMAKE_BINARY_DIR}/board.bmp)
 
