@@ -36,8 +36,6 @@ namespace Reversi {
             set(i, 0, Square::OutOfRange);
             set(i, MAX_FILES + 1, Square::OutOfRange);
         }
-        mPlacableCache.reserve(MAX_FILES * MAX_RANK);
-        update_placable_cache();
     }
 
     Square Board::operator() (int x, int y) const noexcept {
@@ -107,21 +105,27 @@ namespace Reversi {
         return false;
     }
 
-    void Board::update_placable_cache() {
-        mPlacableCache.clear();
+    std::vector<std::pair<int, int>> Board::get_placable() const {
+        std::vector<std::pair<int, int>> ans;
         for (int i = 1; i <= MAX_FILES; i++)
             for (int j = 1; j <= MAX_RANK; j++)
                 if (is_placable(i, j))
-                    mPlacableCache.push_back({ i, j });
+                    ans.push_back({ i, j });
+        return ans;
     }
 
-    std::vector<std::pair<int, int>> const& Board::get_placable() const {
-        return mPlacableCache;
+    bool Board::is_skip_legal() const noexcept {
+        for (int i = 1; i <= MAX_FILES; i++)
+            for (int j = 1; j <= MAX_RANK; j++)
+                if (is_placable(i, j))
+                    return false;
+        return true;
     }
 
     TEST_CASE("placable") {
         Board b;
         REQUIRE(b.at(4, 4) == Square::Black);
+        CHECK(!b.is_skip_legal());
         CHECK(!b.is_placable(4, 4));
         CHECK(!b.is_placable(4, 5));
         CHECK(!b.is_placable(-1, -1));
@@ -185,14 +189,23 @@ namespace Reversi {
             return MatchResult::White;
     }
 
+    bool operator == (const Board& lhs, const Board& rhs) noexcept {
+        // Put the simple comparison first
+        return lhs.mNextPlayer == rhs.mNextPlayer && lhs.mSquares == rhs.mSquares;
+    }
+
     TEST_CASE("simple game") {
         Board b;
+        // Check == along the way
+        CHECK(b == Board());
         // The game starts with black and an even position
         CHECK(b.whos_next() == Player::Black);
         CHECK(b.count() == MatchResult::Draw);
         REQUIRE(b(4, 4) == Square::Black);
         REQUIRE(b.is_placable(4, 6));
         b.place(4, 6);
+        CHECK(b != Board());
+        CHECK(!(b == Board()));
         CHECK(b.whos_next() == Player::White);
         CHECK(b(4, 6) == Square::Black);
         CHECK(b(4, 5) == Square::Black);
@@ -225,4 +238,21 @@ namespace Reversi {
         Board b;
         CHECK_THROWS_AS(b.place(0, -1), std::out_of_range);
     }
+}
+
+// The hash specialization
+std::size_t std::hash<Reversi::Board>::operator() (const Reversi::Board& b) const noexcept {
+    static_assert(std::is_unsigned_v<std::size_t>, "Size type should be unsigned!");
+    static_assert(sizeof(std::size_t) == 8, "Expects size_t to be 8 bytes long!");
+    // Copied from cppreference
+    std::size_t ans = 0xcbf29ce484222325;
+    constexpr std::size_t prime = 0x100000001B3;
+    // Who's to play is also an important part of the information.
+    ans = (ans * prime) ^ static_cast<std::size_t>(b.whos_next());
+    for (int i = 1; i <= 8; i++) {
+        for (int j = 1; j <= 8; j++)
+            // FIXME: After a few test runs, remove this at!
+            ans = (ans * prime) ^ static_cast<std::size_t>(b.at(i, j));
+    }
+    return ans;
 }

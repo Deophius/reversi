@@ -180,7 +180,7 @@ namespace Reversi {
             for (const auto& move : js["annotation"]) {
                 anno.emplace_back(move[0], move[1]);
                 if (move[0] == 0 && move[1] == 0) {
-                    if (b.get_placable().size())
+                    if (!b.is_skip_legal())
                         throw ReversiError("Invalid skip in annotation!");
                     b.skip();
                 } else {

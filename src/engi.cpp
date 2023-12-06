@@ -90,9 +90,9 @@ namespace Reversi {
 
     std::pair<int, int> RandomChoice::do_make_move() {
         std::this_thread::sleep_for(std::chrono::milliseconds(400));
-        return mBoard.get_placable().size() ?
-            mBoard.get_placable().at(mRandomGen() % mBoard.get_placable().size()) :
-            std::pair(0, 0);
+        // The placable squares
+        auto plc = mBoard.get_placable();
+        return plc.size() ? plc.at(mRandomGen() % plc.size()) : std::pair(0, 0);
     }
     
     std::string RandomChoice::get_name() {

@@ -43,16 +43,10 @@ namespace Reversi {
         std::array<unsigned char, ARR_SIZE> mSquares;
         // The next player to play
         Player mNextPlayer;
-        // Caches the result of get_placable(). It's a responsiblity of all methods
-        // that can modify the board to keep this up to date.
-        std::vector<std::pair<int, int>> mPlacableCache;
 
         // Sets (x, y) to sq.
         // No range checking.
         void set(int x, int y, Square sq) noexcept;
-
-        // Updates the placable cache
-        void update_placable_cache();
 
     public:
         // Constructs the Board object with the initial position.
@@ -73,7 +67,11 @@ namespace Reversi {
 
         // Returns a vector of all (x, y) pairs at which the player can put his
         // next piece. Simple wrapper around is_placable.
-        const std::vector<std::pair<int, int>>& get_placable() const;
+        // This function is not cached either.
+        std::vector<std::pair<int, int>> get_placable() const;
+
+        // Returns whether a skip is valid (nowhere placable)
+        bool is_skip_legal() const noexcept;
 
         // Places a piece at (x, y).
         // Doesn't check whether this is valid.
@@ -84,7 +82,6 @@ namespace Reversi {
         // Doesn't check that the skip is legitimate.
         inline void skip() noexcept {
             mNextPlayer = static_cast<Player>(1 - static_cast<unsigned char>(mNextPlayer));
-            update_placable_cache();
         }
 
         // Assuming that both sides have nowhere to go, counts the material and
@@ -95,6 +92,10 @@ namespace Reversi {
         inline Player whos_next() const noexcept {
             return mNextPlayer;
         }
+
+        // Checks two boards for equality. Making it a friend function because
+        // the comparison doesn't need to unpack the bitfield representations.
+        friend bool operator == (const Board& lhs, const Board& rhs) noexcept;
     };
 
     // interface fwd
@@ -211,4 +212,11 @@ namespace Reversi {
         void from_json(const nlohmann::json& js);
     };
 }
+
+// Since Board contains a cache, we explicitly write a hash specialization for it.
+template <>
+struct std::hash<Reversi::Board> {
+    std::size_t operator() (const Reversi::Board& b) const noexcept;
+};
+
 #endif

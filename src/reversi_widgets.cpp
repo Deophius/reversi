@@ -122,9 +122,15 @@ namespace Reversi {
     std::pair<int, int> UserInputEngine::do_make_move() {
         using namespace std::chrono_literals;
         // We can safely access mBoard since it's protected by the mutex
-        if (mBoard.get_placable().size()) {
+        if (!mBoard.is_skip_legal()) {
             // Hand off the promise to the board. Since the board might return
             // invalid data, we need to get a loop.
+            // is_placable[i][j] is true if we can put a piece on (i, j)
+            bool is_placable[9][9];
+            for (int i = 1; i <= 8; i++) {
+                for (int j = 1; j <= 8; j++)
+                    is_placable[i][j] = mBoard.is_placable(i, j);
+            }
             while (true) {
                 std::promise<std::pair<int, int>> prom;
                 auto fut = prom.get_future();
@@ -140,11 +146,8 @@ namespace Reversi {
                 // abandoned_promise.
                 auto result = fut.get();
                 // Check if this is a legal move
-                if (std::find(mBoard.get_placable().cbegin(), mBoard.get_placable().cend(),
-                    result) != mBoard.get_placable().cend()
-                ) {
+                if (is_placable[result.first][result.second])
                     return result;
-                }
                 // This move is not legal. We tell the board widget to keep on listening.
             }
         } else {
