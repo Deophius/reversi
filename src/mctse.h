@@ -1,11 +1,11 @@
 // Monte-Carlo tree search engine
-#ifndef REVERSI_MTCSE_H
-#define REVERSI_MTCSE_H
+#ifndef REVERSI_MCTSE_H
+#define REVERSI_MCTSE_H
 #include "engi.h"
 #include <unordered_map>
 
 namespace Reversi {
-    class MTCS : public Engine {
+    class MCTS : public Engine {
         // The random generator used by rollout.
         static std::function<int()> mRandGen;
 
@@ -35,12 +35,12 @@ namespace Reversi {
         virtual std::pair<int, int> do_make_move() override;
 
     public:
-        MTCS() = default;
+        MCTS() = default;
 
-        virtual ~MTCS() noexcept = default;
+        virtual ~MCTS() noexcept = default;
 
         virtual inline std::string get_name() override {
-            return "MTCSe";
+            return "MCTSe";
         }
     };
 }

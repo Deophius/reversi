@@ -1,4 +1,4 @@
-#include "mtcse.h"
+#include "mctse.h"
 #include <random>
 #include <cassert>
 #include <cmath>
@@ -7,14 +7,14 @@
 #include <stack>
 
 namespace Reversi {
-    std::function<int()> MTCS::mRandGen = []{
+    std::function<int()> MCTS::mRandGen = []{
         std::mt19937 mt;
         std::uniform_int_distribution dist(0, 256);
         return std::bind(dist, mt);
     }();
 
     // We remember that black win == 1
-    int MTCS::rollout(Board b) {
+    int MCTS::rollout(Board b) {
         // The placable squares.
         std::vector<std::pair<int, int>> plc;
         plc.reserve(64);
@@ -40,7 +40,7 @@ namespace Reversi {
         }
     }
 
-    void MTCS::add_next(const Board& b) {
+    void MCTS::add_next(const Board& b) {
         // If the engine is reused, it's possible that the the extension gets a
         // position that has been evaluated before. So we use insert which doesn't
         // override existing items.
@@ -65,7 +65,7 @@ namespace Reversi {
         }
     }
 
-    Board MTCS::select_child(const Board& b) {
+    Board MCTS::select_child(const Board& b) {
         // Adjust this constant for explore/exploit ratio
         static constexpr double c = 0.5;
         assert(mNodes.contains(b) && !mNodes[b].is_leaf);
@@ -115,14 +115,14 @@ namespace Reversi {
         return ans;
     }
 
-    std::pair<int, int> MTCS::do_make_move() {
+    std::pair<int, int> MCTS::do_make_move() {
         using namespace std::chrono;
         time_point tp_end = steady_clock::now() + seconds(1);
         const auto legal_moves = mBoard.get_placable();
         if (legal_moves.empty())
             return {0, 0};
         // First we add the initial position to the table. It's the root node
-        // of the MTCS tree.
+        // of the MCTS tree.
         // If the instance has explored this position in previous games, we just
         // take that and build our computation on top of it.
         mNodes.emplace(mBoard, Node());
