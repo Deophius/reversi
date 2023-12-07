@@ -4,9 +4,9 @@
 
 namespace Reversi {
     MainWindow::MainWindow(const std::string& board_img) :
-        mGameMan(GameMan::create(*this)),
         mSkipButton(*this),
         mBoardWidget(*this, board_img),
+        mGameMan(GameMan::create(*this)),
         mMenubar(*this),
         mPlacer(*this)
     {

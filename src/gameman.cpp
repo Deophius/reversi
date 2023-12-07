@@ -59,8 +59,8 @@ namespace Reversi {
     }
 
     GameMan::GameMan(MainWindow& mw, PrivateTag) :
-        mMainWindow(mw), mThread(&GameMan::mainloop, this),
-        mWhiteSide(nullptr), mBlackSide(nullptr)
+        mWhiteSide(nullptr), mBlackSide(nullptr), mMainWindow(mw),
+        mThread(&GameMan::mainloop, this)
     {
         mAnnotation.reserve(128);
     }

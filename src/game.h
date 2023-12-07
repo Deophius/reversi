@@ -17,7 +17,7 @@ namespace Reversi {
 
     // Result of the game.
     enum class MatchResult : unsigned char {
-        Black, White, Draw, InProgress
+        Black, White, Draw
     };
 
     // Player enum
