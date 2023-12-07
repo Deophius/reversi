@@ -178,8 +178,7 @@ namespace Reversi {
                 switch ((*this)(ix, iy)) {
                     case Square::White: ++wcnt; break;
                     case Square::Black: ++bcnt; break;
-                    default: // Unreachable
-                        assert(false);
+                    default: break; // It might be an empty square, do nothing
                 }
             }
         }

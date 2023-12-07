@@ -2,6 +2,7 @@
 #include <random>
 #include <cassert>
 #include <cmath>
+#include <unordered_set>
 #include <iostream>
 #include <stack>
 
@@ -43,7 +44,10 @@ namespace Reversi {
         // If the engine is reused, it's possible that the the extension gets a
         // position that has been evaluated before. So we use insert which doesn't
         // override existing items.
-        assert(mNodes.contains(b) && mNodes[b].is_leaf);
+        assert(mNodes.contains(b));
+        if (!mNodes[b].is_leaf)
+            // There has been a round of expansion.
+            return;
         const auto plc = b.get_placable();
         mNodes[b].is_leaf = false;
         if (plc.empty()) {
@@ -54,7 +58,7 @@ namespace Reversi {
             return;
         }
         // There are valid moves besides the skip
-        for (const auto [x, y] : plc) {
+        for (const auto& [x, y] : plc) {
             Board b2 = b;
             b2.place(x, y);
             mNodes.emplace(b2, Node());
@@ -80,7 +84,7 @@ namespace Reversi {
         // FIXME: I'm not sure if moving the if inside the for loop will cause the program
         // to run much slower.
         if (b.whos_next() == Player::Black) {
-            for (const auto [x, y] : plc) {
+            for (const auto& [x, y] : plc) {
                 Board b2 = b;
                 b2.place(x, y);
                 const Node& node = mNodes[b2];
@@ -94,7 +98,7 @@ namespace Reversi {
                 }
             }
         } else {
-            for (const auto [x, y] : plc) {
+            for (const auto& [x, y] : plc) {
                 Board b2 = b;
                 b2.place(x, y);
                 const Node& node = mNodes[b2];
@@ -124,11 +128,20 @@ namespace Reversi {
         mNodes.emplace(mBoard, Node());
         // The stack for backtracing
         std::stack<Board> st;
+        // To avoid the situation mentioned above. Without the vis the 
+        std::unordered_set<Board> vis;
+        unsigned cnt = 0;
         while (steady_clock::now() < tp_end && !mCancel.load(std::memory_order_acquire)) {
+            ++cnt;
+            vis.clear();
             Board curr = mBoard;
-            while (!mNodes[curr].is_leaf) {
+            int step_cnt = 0;
+            while (!mNodes[curr].is_leaf && !vis.contains(curr)) {
                 st.push(curr);
+                vis.insert(curr);
                 curr = select_child(curr);
+                ++step_cnt;
+                assert(step_cnt <= 128);
             }
             // The stack for backtracking includes the leaf node, too.
             st.push(curr);
@@ -143,11 +156,12 @@ namespace Reversi {
                 st.pop();
             }
         }
+        std::cerr << cnt << " cycles done, " << mNodes.size() << " nodes in table\n";
         if (mCancel.load(std::memory_order_acquire))
             throw OperationCanceled();
         std::pair<int, int> ans;
         int max_visits = -1;
-        for (const auto [x, y] : legal_moves) {
+        for (const auto& [x, y] : legal_moves) {
             Board b2 = mBoard;
             b2.place(x, y);
             if (const int curr_visits = mNodes[b2].n; curr_visits > max_visits) {
