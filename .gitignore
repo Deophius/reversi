@@ -36,3 +36,6 @@ build/
 
 # Editor configuration files
 .vscode/
+
+# JSON data
+*.json
