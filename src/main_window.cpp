@@ -1,5 +1,8 @@
 #include "reversi_widgets.h"
 #include <nana/gui/filebox.hpp>
+#include <nana/gui/widgets/checkbox.hpp>
+#include <nana/gui/widgets/label.hpp>
+#include <iostream>
 #include <fstream>
 
 namespace Reversi {
@@ -58,30 +61,73 @@ namespace Reversi {
         }
     }
 
+    // Fills in rg and ckbox for one side. For use only in the following function.
+    static void populate_checkbox_helper(
+        nana::form& fm, nana::radio_group& rg,
+        std::vector<std::unique_ptr<nana::checkbox>>& ckbox
+    ) {
+        ckbox.emplace_back(new nana::checkbox(fm.handle(), "UserInput"));
+        // Defaults to user input and avoids a bunch of npos issues.
+        ckbox.front()->check(true);
+        ckbox.emplace_back(new nana::checkbox(fm.handle(), "MCTSe"));
+        ckbox.emplace_back(new nana::checkbox(fm.handle(), "RandomChoice"));
+        for (auto& ptr : ckbox)
+            rg.add(*ptr);
+    }
+
+    // Launches the modal window and outputs the user's selection into
+    // black_name and white_name.
+    void MainWindow::new_game_pick_engine(
+        std::string& black_name, std::string& white_name
+    ) {
+        // The dialog box
+        nana::form diag(*this, { 700, 200 });
+        // The black and white sides' checkboxes and radio groups.
+        nana::radio_group rg_black, rg_white;
+        std::vector<std::unique_ptr<nana::checkbox>> ckbox_black, ckbox_white;
+        populate_checkbox_helper(diag, rg_black, ckbox_black);
+        populate_checkbox_helper(diag, rg_white, ckbox_white);
+        // Labels describing the options
+        nana::label lbb(diag, "Black:"), lbvs(diag, "vs."), lbw(diag, "White:");
+        // The confirmation button
+        nana::button butt(diag);
+        butt.events().click([&] {
+            using nana::radio_group;
+            std::cerr << "Black engine: " << ckbox_black.at(rg_black.checked())->caption() << '\n';
+            std::cerr << "White engine: " << ckbox_white.at(rg_white.checked())->caption() << '\n';
+        });
+        // The placer for the dialog box
+        nana::place plc(diag);
+        plc.div("<weight=15%><vert <rgb><<><lbvs><>><rgw><butt>><weight=15%>");
+        plc["rgb"] << lbb;
+        for (auto& c : ckbox_black)
+            plc["rgb"] << *c;
+        plc["lbvs"] << lbvs;
+        plc["rgw"] << lbw;
+        for (auto& c : ckbox_white)
+            plc["rgw"] << *c;
+        plc["butt"] << butt;
+        plc.collocate();
+        diag.show();
+        // Experiment shows that after the call to diag.show(), the internal lock
+        // of nana is released.
+        mGameMan->pause_game();
+        // Modal dialog box
+        nana::API::modal_window(diag);
+    }
+
     void MainWindow::menu_start_new_game() {
+        std::cerr << "menu_start_new_game\n";
         if (ask_for_save())
             save_game();
-        auto picked = (nana::msgbox(*this, "New game", nana::msgbox::yes_no_cancel)
-            << "Yes for black, no for white")
-            .icon(nana::msgbox::icon_question)
-            .show();
-        if (picked == nana::msgbox::pick_cancel)
-            return;
-        // Otherwise a new game is indeed started.
-        mGameMan->pause_game();
-        if (picked == nana::msgbox::pick_yes) {
-            // GUI plays black
-            mGameMan->load_black_engine(
-                std::make_unique<UserInputEngine>(mBoardWidget, mSkipButton)
-            );
-            mGameMan->load_white_engine(std::make_unique<RandomChoice>());
-        } else {
-            mGameMan->load_white_engine(
-                std::make_unique<UserInputEngine>(mBoardWidget, mSkipButton)
-            );
-            mGameMan->load_black_engine(std::make_unique<RandomChoice>());
-        }
-        mGameMan->start_new();
+        std::cerr << std::this_thread::get_id() << '\n';
+        // important: The nana library includes a built-in mutex for every widget,
+        // so we can't call pause_game() here, otherwise the GUI thread and the game
+        // manager thread might deadlock.
+        // But that mutex ensures that the game will not continue if we don't close the
+        // dialog.
+        std::string black_name, white_name;
+        new_game_pick_engine(black_name, white_name);
     }
 
     void MainWindow::menu_load_game() {

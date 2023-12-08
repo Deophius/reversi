@@ -168,6 +168,6 @@ namespace Reversi {
     }
 
     std::string UserInputEngine::get_name() {
-        return "UserInputEngine";
+        return "UserInput";
     }
 }

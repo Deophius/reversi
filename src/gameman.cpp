@@ -45,7 +45,9 @@ namespace Reversi {
                     }
                     // Since manager is contained in the MainWindow structure,
                     // it's safe to call the GUI process.
+                    std::cerr << "Waiting for update\n";
                     mMainWindow.update_board(mBoard, { x, y });
+                    std::cerr << "Update done!\n";
                     if (!mGameInProgress)
                         break;
                     // The game is still in progress, we can proceed to the next move.
@@ -120,7 +122,9 @@ namespace Reversi {
     }
 
     void GameMan::pause_game() {
+        std::cout << "Waiting for pause_game...\n";
         std::lock_guard lk(mMutex);
+        std::cout << "Pause game lock acquired!\n";
         if (!mGameInProgress)
             return;
         mWhiteSide->request_cancel();
