@@ -115,6 +115,15 @@ namespace Reversi {
 
         virtual std::string get_name() override;
     };
+
+    // Fwd for the MainWindow class.
+    class MainWindow;
+
+    // Constructs a new std::unique_ptr<Engine> that points
+    // to an object of the correct derived type of Engine.
+    // Throws ReversiError if the engine's name isn't recognized.
+    std::unique_ptr<Engine> make_engine_from_description(
+        const std::string& name, MainWindow& mw);
 }
 
 #endif

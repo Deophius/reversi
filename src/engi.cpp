@@ -1,6 +1,8 @@
 #include "engi.h"
 #include <random>
 #include <iostream>
+#include "reversi_widgets.h"
+#include "mctse.h"
 
 namespace Reversi {
     Engine::Engine() : mThread(&Engine::mainloop, this) {}
@@ -97,5 +99,17 @@ namespace Reversi {
     
     std::string RandomChoice::get_name() {
         return "RandomChoice";
+    }
+
+    std::unique_ptr<Engine> make_engine_from_description(
+        const std::string& name, MainWindow& mw
+    ) {
+        if (name == "RandomChoice")
+            return std::make_unique<RandomChoice>();
+        if (name == "UserInput")
+            return std::make_unique<UserInputEngine>(mw.mBoardWidget, mw.mSkipButton);
+        if (name == "MCTSe")
+            return std::make_unique<MCTS>();
+        throw ReversiError("Unrecognized engine type: " + name);
     }
 }

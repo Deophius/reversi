@@ -161,19 +161,6 @@ namespace Reversi {
         return ans;
     }
 
-    // Helper function that constructs a new std::unique_ptr<Engine> that points
-    // to an object of the correct derived type of Engine.
-    // Throws ReversiError if the engine's name isn't recognized.
-    static std::unique_ptr<Engine> make_engine_from_description(
-        const std::string& name, MainWindow& mw
-    ) {
-        if (name == "RandomChoice")
-            return std::make_unique<RandomChoice>();
-        if (name == "UserInputEngine")
-            return std::make_unique<UserInputEngine>(mw.mBoardWidget, mw.mSkipButton);
-        throw ReversiError("Unrecognized engine type: " + name);
-    }
-
     void GameMan::read_annotation(const nlohmann::json& js) {
         using nlohmann::json;
         using namespace std::string_literals;
