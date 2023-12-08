@@ -205,7 +205,6 @@ namespace Reversi {
         REQUIRE(b(4, 4) == Square::Black);
         REQUIRE(b.is_placable(4, 6));
         b.place(4, 6);
-        CHECK(b != Board());
         CHECK(!(b == Board()));
         CHECK(b.whos_next() == Player::White);
         CHECK(b(4, 6) == Square::Black);

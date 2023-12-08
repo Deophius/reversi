@@ -136,7 +136,7 @@ namespace Reversi {
             vis.clear();
             Board curr = mBoard;
             int step_cnt = 0;
-            while (!mNodes[curr].is_leaf && !vis.contains(curr)) {
+            while (!mNodes[curr].is_leaf && vis.count(curr) == 0) {
                 st.push(curr);
                 vis.insert(curr);
                 curr = select_child(curr);
