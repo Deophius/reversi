@@ -67,46 +67,66 @@ namespace Reversi {
         std::vector<std::unique_ptr<nana::checkbox>>& ckbox
     ) {
         ckbox.emplace_back(new nana::checkbox(fm.handle(), "UserInput"));
-        // Defaults to user input and avoids a bunch of npos issues.
-        ckbox.front()->check(true);
         ckbox.emplace_back(new nana::checkbox(fm.handle(), "MCTSe"));
         ckbox.emplace_back(new nana::checkbox(fm.handle(), "RandomChoice"));
         for (auto& ptr : ckbox)
             rg.add(*ptr);
+        // Defaults to user input and avoids a bunch of npos issues.
+        ckbox.front()->check(true);
     }
 
     // Launches the modal window and outputs the user's selection into
     // black_name and white_name.
-    void MainWindow::new_game_pick_engine(
-        std::string& black_name, std::string& white_name
-    ) {
+    void MainWindow::newgame_dialog() {
+        std::string black_name, white_name;
         // The dialog box
         nana::form diag(*this, { 700, 200 });
+        diag.caption("New game");
         // The black and white sides' checkboxes and radio groups.
         nana::radio_group rg_black, rg_white;
         std::vector<std::unique_ptr<nana::checkbox>> ckbox_black, ckbox_white;
         populate_checkbox_helper(diag, rg_black, ckbox_black);
         populate_checkbox_helper(diag, rg_white, ckbox_white);
         // Labels describing the options
-        nana::label lbb(diag, "Black:"), lbvs(diag, "vs."), lbw(diag, "White:");
+        nana::label lbb(diag, "Black:"), lbw(diag, "White:");
         // The confirmation button
-        nana::button butt(diag);
-        butt.events().click([&] {
+        nana::button butt_ok(diag), butt_cancel(diag);
+        butt_ok.caption("OK");
+        butt_ok.events().click([&] {
             using nana::radio_group;
-            std::cerr << "Black engine: " << ckbox_black.at(rg_black.checked())->caption() << '\n';
-            std::cerr << "White engine: " << ckbox_white.at(rg_white.checked())->caption() << '\n';
+            mGameMan->load_black_engine(
+                make_engine_from_description(
+                    ckbox_black.at(rg_black.checked())->caption(),
+                    *this
+                )
+            );
+            mGameMan->load_white_engine(
+                make_engine_from_description(
+                    ckbox_white.at(rg_white.checked())->caption(),
+                    *this
+                )
+            );
+            mGameMan->start_new();
+            diag.close();
+        });
+        butt_cancel.caption("Cancel");
+        butt_cancel.events().click([&] {
+            mGameMan->resume_game();
+            diag.close();
+        });
+        diag.events().unload([&]{
+            mGameMan->resume_game();
         });
         // The placer for the dialog box
         nana::place plc(diag);
-        plc.div("<weight=15%><vert <rgb><<><lbvs><>><rgw><butt>><weight=15%>");
+        plc.div("<weight=15%><vert <rgb><rgw><<><butt gap=50 arrange=[75,75]><>><weight=15%>");
         plc["rgb"] << lbb;
         for (auto& c : ckbox_black)
             plc["rgb"] << *c;
-        plc["lbvs"] << lbvs;
         plc["rgw"] << lbw;
         for (auto& c : ckbox_white)
             plc["rgw"] << *c;
-        plc["butt"] << butt;
+        plc["butt"] << butt_ok << butt_cancel;
         plc.collocate();
         diag.show();
         // Experiment shows that after the call to diag.show(), the internal lock
@@ -120,14 +140,12 @@ namespace Reversi {
         std::cerr << "menu_start_new_game\n";
         if (ask_for_save())
             save_game();
-        std::cerr << std::this_thread::get_id() << '\n';
         // important: The nana library includes a built-in mutex for every widget,
         // so we can't call pause_game() here, otherwise the GUI thread and the game
         // manager thread might deadlock.
         // But that mutex ensures that the game will not continue if we don't close the
         // dialog.
-        std::string black_name, white_name;
-        new_game_pick_engine(black_name, white_name);
+        newgame_dialog();
     }
 
     void MainWindow::menu_load_game() {

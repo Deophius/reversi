@@ -131,7 +131,7 @@ namespace Reversi {
 
         // Creates a popup window asking the user to select two sides of the
         // new game. The results are stored in the two out params.
-        void new_game_pick_engine(std::string& black_name, std::string& white_name);
+        void newgame_dialog();
 
         // Starts a new game. For use in the menu.
         void menu_start_new_game();
