@@ -13,6 +13,8 @@ namespace Reversi {
             // Now we have the mutex.
             auto cmd = mSemaQueue.front();
             mSemaQueue.pop();
+            // Accept input while we are processing
+            lk.unlock();
             switch (cmd & 0xFF) {
                 case 0: // Exit
                     return;
@@ -24,7 +26,7 @@ namespace Reversi {
     }
 
     void GameMan::handle_place(unsigned cmd) {
-        std::lock_guard lk(mDataMutex);
+        std::unique_lock lk(mDataMutex);
         const int x = (cmd >> 8) & 0xFF, y = (cmd >> 16) & 0xFF,
             id = cmd >> 24;
         if (id != (int)mGameID || !mGameInProgress)
@@ -45,6 +47,9 @@ namespace Reversi {
                 // Game finished.
                 mGameInProgress = false;
                 ++mGameID;
+                // The nana library contains an internal lock and we can't change
+                // a reference, so let's just drop this lock
+                lk.unlock();
                 mMainWindow.announce_game_result(mBoard.count());
                 return;
             }
@@ -54,7 +59,10 @@ namespace Reversi {
         // Since manager is contained in the MainWindow structure,
         // it's safe to call the GUI process.
         std::cerr << "Waiting for update\n";
+        // Same as above
+        lk.unlock();
         mMainWindow.update_board(mBoard, { x, y });
+        lk.lock();
         std::cerr << "Update done!\n";
         if (!mGameInProgress)
             return;

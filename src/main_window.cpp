@@ -129,9 +129,6 @@ namespace Reversi {
         plc["butt"] << butt_ok << butt_cancel;
         plc.collocate();
         diag.show();
-        // Experiment shows that after the call to diag.show(), the internal lock
-        // of nana is released.
-        mGameMan->pause_game();
         // Modal dialog box
         nana::API::modal_window(diag);
     }
@@ -140,11 +137,7 @@ namespace Reversi {
         std::cerr << "menu_start_new_game\n";
         if (ask_for_save())
             save_game();
-        // important: The nana library includes a built-in mutex for every widget,
-        // so we can't call pause_game() here, otherwise the GUI thread and the game
-        // manager thread might deadlock.
-        // But that mutex ensures that the game will not continue if we don't close the
-        // dialog.
+        mGameMan->pause_game();
         newgame_dialog();
     }
 
