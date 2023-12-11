@@ -113,6 +113,8 @@ namespace Reversi {
         // The components of the application
         SkipButton mSkipButton;
         BoardWidget mBoardWidget;
+        // The take back button
+        nana::button mTakebackButton;
         // Important: Let the game manager be destroyed first, since its mainloop
         // potentially accesses the two control widgets.
         std::shared_ptr<GameMan> mGameMan;

@@ -73,6 +73,36 @@ namespace Reversi {
             mBlackSide->request_compute(mGameID);
     }
 
+    void GameMan::take_back() {
+        // The new board
+        Board b2;
+        {
+            std::lock_guard lk(mDataMutex);
+            // A takeback takes back all the moves if the total number of moves is less than 2.
+            for (std::size_t i = 0; i < std::max(mAnnotation.size(), std::size_t(2)) - 2; ++i) {
+                if (mAnnotation[i].first == 0)
+                    b2.skip();
+                else
+                    b2.place(mAnnotation[i].first, mAnnotation[i].second);
+            }
+        }
+        pause_game();
+        {
+            std::lock_guard lk(mDataMutex);
+            mBoard = b2;
+            // Remember to modify the annotation, too.
+            if (!mAnnotation.empty())
+                mAnnotation.pop_back();
+            if (!mAnnotation.empty())
+                mAnnotation.pop_back();
+            // Then we notify the engines of the change.
+            mBlackSide->change_position(b2);
+            mWhiteSide->change_position(b2);
+        }
+        mMainWindow.update_board(b2, mAnnotation.empty() ? std::pair(0, 0) : mAnnotation.back());
+        resume_game();
+    }
+
     GameMan::GameMan(MainWindow& mw, PrivateTag) :
         mWhiteSide(nullptr), mBlackSide(nullptr), mMainWindow(mw),
         mThread(&GameMan::mainloop, this)

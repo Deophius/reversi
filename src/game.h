@@ -196,6 +196,10 @@ namespace Reversi {
         void enter_move(std::pair<int, int> mov, unsigned char game_id);
 
         // (GUI thread)
+        // Takes back one move.
+        void take_back();
+
+        // (GUI thread)
         // Pauses the current game. Increments the game id counter to refuse
         // input from the engines.
         void pause_game();

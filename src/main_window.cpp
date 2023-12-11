@@ -9,17 +9,16 @@ namespace Reversi {
     MainWindow::MainWindow(const std::string& board_img) :
         mSkipButton(*this),
         mBoardWidget(*this, board_img),
+        mTakebackButton(*this),
         mGameMan(GameMan::create(*this)),
         mMenubar(*this),
         mPlacer(*this)
     {
-        // Sets GUI related stuff
-        caption("Reversi");
-        mPlacer.div("<><vert weight=800 <><board weight=800><<><skip><>>><>");
-        mPlacer["board"] << mBoardWidget;
-        mPlacer["skip"] << mSkipButton;
-        mPlacer.collocate();
-        show();
+        // Initialize the take back button.
+        mTakebackButton.caption("Take back");
+        mTakebackButton.events().click([this] {
+            mGameMan->take_back();
+        });
         // All our functionality will go in the menubar.
         mMenubar.push_back("&File");
         mMenubar.at(0).append("New game", [this](nana::menu::item_proxy&) {
@@ -45,6 +44,13 @@ namespace Reversi {
             if (ask_for_save())
                 save_game();
         });
+        // Sets GUI related stuff
+        caption("Reversi");
+        mPlacer.div("<><vert weight=800 <><board weight=800><<><buttons gap=10%><>>><>");
+        mPlacer["board"] << mBoardWidget;
+        mPlacer["buttons"] << mSkipButton << mTakebackButton;
+        mPlacer.collocate();
+        show();
     }
 
     void MainWindow::announce_game_result(MatchResult res) {
