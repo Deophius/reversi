@@ -7,8 +7,6 @@
 int main() {
     using namespace Reversi;
     MainWindow mw("board.bmp");
-    mw.mGameMan->load_white_engine(std::make_unique<MCTS>());
-    mw.mGameMan->load_black_engine(std::make_unique<RandomChoice>());
-    mw.mGameMan->start_new();
+    mw.newgame_dialog();
     nana::exec();
 }
