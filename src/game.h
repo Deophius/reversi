@@ -186,6 +186,9 @@ namespace Reversi {
         // Must be called when there's no game in progress.
         void load_black_engine(std::unique_ptr<Engine> e);
 
+        // Checks if both engines are loaded.
+        bool engines_loaded();
+
         // (GUI thread)
         // Starts a new game in the mainloop.
         // If any side doesn't have an engine loaded, throws Reversi error.

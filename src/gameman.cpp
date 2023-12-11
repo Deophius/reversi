@@ -139,6 +139,11 @@ namespace Reversi {
             mWhiteSide->link_game_man(weak_from_this());
     }
 
+    bool GameMan::engines_loaded() {
+        std::lock_guard lk(mDataMutex);
+        return mWhiteSide && mBlackSide;
+    }
+
     void GameMan::start_new() {
         std::lock_guard lk(mDataMutex);
         if (!(mWhiteSide && mBlackSide))
