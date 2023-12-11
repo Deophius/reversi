@@ -136,14 +136,20 @@ namespace Reversi {
         //   3 -- (sent by engines) x = 9~16 bits, y = 17~24bits, places at (x, y)
         //        game id = 25~32 bits
         std::queue<unsigned int> mSemaQueue;
-        // Mutex that protects almost everything in this class.
-        std::mutex mMutex;
+        // Mutex that protects mSemaQueue.
+        std::mutex mQueueMutex;
+        // Mutex that protects the reversi data members.
+        std::mutex mDataMutex;
         // Condition variable to notify the mainloop thread when there are new
         // entries in the queue to process.
         std::condition_variable mCondVar;
 
         // The mainloop of mThread.
         void mainloop();
+
+        // Helper function that deals with "place" command in the mainloop.
+        // This function tries to obtain a lock on the data mutex.
+        void handle_place(unsigned int cmd);
 
         struct PrivateTag {};
 
