@@ -50,7 +50,6 @@ namespace Reversi {
         mPlacer["board"] << mBoardWidget;
         mPlacer["buttons"] << mSkipButton << mTakebackButton;
         mPlacer.collocate();
-        show();
     }
 
     void MainWindow::announce_game_result(MatchResult res) {
@@ -83,10 +82,10 @@ namespace Reversi {
 
     // Launches the modal window and outputs the user's selection into
     // black_name and white_name.
-    void MainWindow::newgame_dialog() {
+    void MainWindow::newgame_dialog(bool is_startup) {
         std::string black_name, white_name;
         // The dialog box
-        nana::form diag(*this, { 700, 200 });
+        nana::form diag(*this, { 700, 200 }, nana::appearance(1, 0, 1, 0, 0, 0, 0));
         diag.caption("New game");
         // The black and white sides' checkboxes and radio groups.
         nana::radio_group rg_black, rg_white;
@@ -117,11 +116,16 @@ namespace Reversi {
         });
         butt_cancel.caption("Cancel");
         butt_cancel.events().click([&] {
-            mGameMan->resume_game();
+            if (!is_startup)
+                mGameMan->resume_game();
             diag.close();
         });
-        diag.events().unload([&]{
-            mGameMan->resume_game();
+        diag.events().unload([this, is_startup] {
+            if (mGameMan->engines_loaded())
+                // If the game has started, this call is a no-op.
+                mGameMan->resume_game();
+            else
+                nana::API::exit_all();
         });
         // The placer for the dialog box
         nana::place plc(diag);

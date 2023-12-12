@@ -7,6 +7,7 @@
 int main() {
     using namespace Reversi;
     MainWindow mw("board.bmp");
-    mw.newgame_dialog();
+    mw.newgame_dialog(true);
+    mw.show();
     nana::exec();
 }

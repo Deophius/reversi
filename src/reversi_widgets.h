@@ -133,7 +133,9 @@ namespace Reversi {
 
         // Creates a popup window asking the user to select two sides of the
         // new game. The results are stored in the two out params.
-        void newgame_dialog();
+        // The param is_startup is used to distinguish between the startup dialog
+        // and other dialog boxes after engines have been selected.
+        void newgame_dialog(bool is_startup = false);
 
         // Starts a new game. For use in the menu.
         void menu_start_new_game();
