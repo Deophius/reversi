@@ -14,9 +14,10 @@ set(ENGINE_SRC src/board.cpp src/gameman.cpp src/engi.cpp src/reversi_widgets.cp
 set(TEST_SRC src/test_board.cpp test_main.cpp)
 
 file(COPY_FILE ${CMAKE_SOURCE_DIR}/static/board.bmp ${CMAKE_BINARY_DIR}/board.bmp)
+file(COPY_FILE ${CMAKE_SOURCE_DIR}/static/appicon.ico ${CMAKE_BINARY_DIR}/appicon.ico)
 
 add_library(reversi STATIC ${ENGINE_SRC})
 add_executable(test_main ${TEST_SRC})
 target_link_libraries(test_main reversi nana)
-add_executable(main src/main.cpp)
+add_executable(main src/main.cpp src/main.rc)
 target_link_libraries(main reversi nana)
