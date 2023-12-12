@@ -11,11 +11,12 @@ link_directories(${PROJECT_SOURCE_DIR}/lib)
 
 set(ENGINE_SRC src/board.cpp src/gameman.cpp src/engi.cpp src/reversi_widgets.cpp
     src/main_window.cpp src/mctse.cpp)
+set(TEST_SRC src/test_board.cpp test_main.cpp)
 
 file(COPY_FILE ${CMAKE_SOURCE_DIR}/static/board.bmp ${CMAKE_BINARY_DIR}/board.bmp)
 
-add_executable(test_main test_main.cpp ${ENGINE_SRC})
-add_executable(main src/main.cpp ${ENGINE_SRC})
-target_compile_definitions(main PUBLIC DOCTEST_CONFIG_DISABLE)
-target_link_libraries(main nana)
-target_link_libraries(test_main nana)
+add_library(reversi STATIC ${ENGINE_SRC})
+add_executable(test_main ${TEST_SRC})
+target_link_libraries(test_main reversi nana)
+add_executable(main src/main.cpp)
+target_link_libraries(main reversi nana)
