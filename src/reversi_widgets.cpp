@@ -45,6 +45,7 @@ namespace Reversi {
     }
     
     void BoardWidget::update(const Board& b, int x, int y) {
+        mCurrBoard = b;
         // First we remove the old cross.
         if (mGraphCross.first) {
             auto [i, j] = mGraphCross;
@@ -62,16 +63,20 @@ namespace Reversi {
         mGraphCross = { x, y };
         if (x && y)
             draw_cross(x, y, nana::colors::green);
-        mGraphics.save_as_file("tmp.bmp");
-        // Calls super()'s method.
-        this->load(nana::paint::image("tmp.bmp"));
+        // mGraphics.paste(nana::API::root(*this), nana::rectangle{ pos(), mGraphics.size() }, 0, 0);
+        mDrawing.update();
+    }
+
+    void BoardWidget::redraw() {
+        update(mCurrBoard, mGraphCross.first, mGraphCross.second);
     }
 
     BoardWidget::BoardWidget(nana::window handle, const std::string& file_name, int sq_size) :
         nana::picture(handle), mSquareSize(sq_size), mBoardImage(file_name), mGraphics({
             (unsigned)sq_size * 8,
             (unsigned)sq_size * 8
-        })
+        }),
+        mDrawing(*this)
     {
         events().click([this](const nana::arg_click& arg) {
             try {
@@ -81,6 +86,9 @@ namespace Reversi {
                 // This means that there is no active request waiting for the click.
                 // Just ignore it.
             }
+        });
+        mDrawing.draw([this](nana::paint::graphics& dest_graphic) {
+            mGraphics.paste(dest_graphic, 0, 0);
         });
         mBoardImage.stretch(
             nana::rectangle{ {0, 0}, mBoardImage.size() },

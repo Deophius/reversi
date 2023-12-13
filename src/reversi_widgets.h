@@ -19,6 +19,9 @@ namespace Reversi {
 
         // The graphics object where the drawing takes place.
         nana::paint::graphics mGraphics;
+        
+        // The drawing object
+        nana::drawing mDrawing;
 
         // 9*9 array that records the previous state, as drawn in graphics.
         std::array<std::array<Square, 9>, 9> mGraphContent;
@@ -26,8 +29,8 @@ namespace Reversi {
         // The position of the green cross in graphics.
         std::pair<int, int> mGraphCross;
 
-        // The color the user plays
-        Player mColor;
+        // The current board
+        Board mCurrBoard;
 
         // Used to push data to the user input engine. Reuses are detected by
         // the exception thrown by set_value.
@@ -48,7 +51,7 @@ namespace Reversi {
 
         // Draws a cross at (x, y) with color c, as the "last move indicator"
         void draw_cross(int x, int y, nana::color c);
-
+        
     public:
         // Constructs the board widget with the handle and associated game manager.
         // The board is loaded from a bitmap file named by `file_name`.
@@ -60,6 +63,9 @@ namespace Reversi {
         // Updates the GUI widget according to data passed in
         // The last move was (x, y)
         void update(const Board& b, int x, int y);
+
+        // Redraws the GUI widget according to data stored in the class.
+        void redraw();
 
         // Sends in a promise for the click.
         void listen_click(std::promise<std::pair<int, int>> prom);
