@@ -58,19 +58,28 @@ namespace Reversi {
         }
         // Since manager is contained in the MainWindow structure,
         // it's safe to call the GUI process.
-        std::cerr << "Waiting for update\n";
         // Same as above
         lk.unlock();
         mMainWindow.update_board(mBoard, { x, y });
         lk.lock();
-        std::cerr << "Update done!\n";
         if (!mGameInProgress)
             return;
         // The game is still in progress, we can proceed to the next move.
-        if (mBoard.whos_next() == Player::White)
+        if (mBoard.whos_next() == Player::White) {
             mWhiteSide->request_compute(mGameID);
-        else
+            const UserInputEngine* uie = dynamic_cast<UserInputEngine*>(
+                mWhiteSide.get()
+            );
+            lk.unlock();
+            mMainWindow.input_button_activity(uie);
+        } else {
             mBlackSide->request_compute(mGameID);
+            const UserInputEngine* uie = dynamic_cast<UserInputEngine*>(
+                mBlackSide.get()
+            );
+            lk.unlock();
+            mMainWindow.input_button_activity(uie);
+        }
     }
 
     void GameMan::take_back() {

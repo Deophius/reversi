@@ -53,6 +53,8 @@ namespace Reversi {
     }
 
     void MainWindow::announce_game_result(MatchResult res) {
+        // After announcing the game result, do not allow backtracking
+        input_button_activity(nullptr);
         switch (res) {
         case MatchResult::Draw:
             nana::msgbox(*this, "Game ended in draw").show();
@@ -64,6 +66,11 @@ namespace Reversi {
             nana::msgbox(*this, "Black wins").show();
             break;
         }
+    }
+
+    void MainWindow::input_button_activity(const UserInputEngine* uie) {
+        mTakebackButton.enabled(uie);
+        mSkipButton.enabled(uie);
     }
 
     // Fills in rg and ckbox for one side. For use only in the following function.

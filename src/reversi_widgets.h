@@ -137,6 +137,10 @@ namespace Reversi {
         // Broadcasts the result.
         void announce_game_result(MatchResult res);
 
+        // If the passed in UIE pointer isn't nullptr (i.e., the next player to
+        // play is the user), enables the two buttons.
+        void input_button_activity(const UserInputEngine* uie);
+
         // Creates a popup window asking the user to select two sides of the
         // new game. The results are stored in the two out params.
         // The param is_startup is used to distinguish between the startup dialog
