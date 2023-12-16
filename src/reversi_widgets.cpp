@@ -131,6 +131,7 @@ namespace Reversi {
         using namespace std::chrono_literals;
         // We can safely access mBoard since it's protected by the mutex
         if (!mBoard.is_skip_legal()) {
+            mSkipButton.enabled(false);
             // Hand off the promise to the board. Since the board might return
             // invalid data, we need to get a loop.
             // is_placable[i][j] is true if we can put a piece on (i, j)
@@ -161,6 +162,7 @@ namespace Reversi {
         } else {
             if (mSkipButton.get_auto_skip())
                 return {0, 0};
+            mSkipButton.enabled(true);
             // Hand off the promise to the skip button.
             std::promise<void> prom;
             auto fut = prom.get_future();

@@ -262,7 +262,8 @@ namespace Reversi {
         load_black_engine(std::move(new_black));
         load_white_engine(std::move(new_white));
         // Let's ignore the possibility of these functions throwing.
-        mMainWindow.update_board(mBoard, {0, 0});
+        const auto& last_move = js["annotation"].back();
+        mMainWindow.update_board(mBoard, { last_move[0], last_move[1] });
         mWhiteSide->change_position(mBoard);
         mBlackSide->change_position(mBoard);
         resume_game();

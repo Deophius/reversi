@@ -17,5 +17,8 @@ int main() {
     MainWindow mw("board.bmp");
     mw.newgame_dialog(true);
     mw.show();
+    #if __has_include(<windows.h>)
+    ::ShowWindow(reinterpret_cast<HWND>(nana::API::root(mw)), SW_MAXIMIZE);
+    #endif
     nana::exec();
 }
