@@ -72,7 +72,7 @@ namespace Reversi {
     }
 
     BoardWidget::BoardWidget(nana::window handle, const std::string& file_name, int sq_size) :
-        nana::picture(handle), mSquareSize(sq_size), mBoardImage(file_name), mGraphics({
+        nana::picture(handle), mSquareSize(sq_size), mGraphics({
             (unsigned)sq_size * 8,
             (unsigned)sq_size * 8
         }),
@@ -90,8 +90,9 @@ namespace Reversi {
         mDrawing.draw([this](nana::paint::graphics& dest_graphic) {
             mGraphics.paste(dest_graphic, 0, 0);
         });
-        mBoardImage.stretch(
-            nana::rectangle{ {0, 0}, mBoardImage.size() },
+        nana::paint::image board_image(file_name);
+        board_image.stretch(
+            nana::rectangle{ {0, 0}, board_image.size() },
             mGraphics,
             nana::rectangle{ {0, 0}, mGraphics.size() }
         );

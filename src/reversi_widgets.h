@@ -14,9 +14,6 @@ namespace Reversi {
         // The size of each square
         const int mSquareSize;
 
-        // The bitmap image of the board
-        nana::paint::image mBoardImage;
-
         // The graphics object where the drawing takes place.
         nana::paint::graphics mGraphics;
         
