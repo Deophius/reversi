@@ -59,6 +59,16 @@ namespace Reversi {
                 }
             }
         }
+        // We cannot guard the for loops with if (mDrawHint) because that will
+        // keep the crosses on the board if the user turns off the feature.
+        for (int i = 1; i <= 8; i++) {
+            for (int j = 1; j <= 8; j++) {
+                if (mDrawHint && mCurrBoard.is_placable(i, j))
+                    draw_cross(i, j, nana::colors::indigo);
+                else
+                    draw_cross(i, j, pick_color(b, i, j));
+            }
+        }
         // If this is a skip, we still need to set the last cross to (0, 0)
         mGraphCross = { x, y };
         if (x && y)
@@ -102,6 +112,10 @@ namespace Reversi {
     void BoardWidget::listen_click(std::promise<std::pair<int, int>> prom) {
         std::lock_guard lk(mPromMutex);
         mUIProm = std::move(prom);
+    }
+
+    void BoardWidget::set_draw_hint(bool enabled) noexcept {
+        mDrawHint = enabled;
     }
 
     SkipButton::SkipButton(nana::window handle) : nana::button(handle) {

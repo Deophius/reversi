@@ -39,6 +39,11 @@ namespace Reversi {
         });
         mMenubar.at(1).check_style(0, nana::menu::checks::highlight);
         mMenubar.at(1).checked(0, true);
+        mMenubar.at(1).append("Graphic hints", [this](nana::menu::item_proxy& ip) {
+            menu_toggle_hint(ip);
+        });
+        mMenubar.at(1).check_style(1, nana::menu::checks::highlight);
+        mMenubar.at(1).checked(1, false);
         // When the window closes, asks the user to save.
         events().unload([this](const nana::arg_unload& arg) {
             if (ask_for_save())
@@ -190,6 +195,11 @@ namespace Reversi {
 
     void MainWindow::menu_toggle_auto_skip(nana::menu::item_proxy& ip) {
         mSkipButton.set_auto_skip(ip.checked());
+    }
+
+    void MainWindow::menu_toggle_hint(nana::menu::item_proxy& ip) {
+        mBoardWidget.set_draw_hint(ip.checked());
+        mBoardWidget.redraw();
     }
 
     void MainWindow::update_board(const Board& b, std::pair<int, int> last_move) {

@@ -29,6 +29,9 @@ namespace Reversi {
         // The current board
         Board mCurrBoard;
 
+        // If this is true, the redraw() will draw crosses on available squares.
+        bool mDrawHint = false;
+
         // Used to push data to the user input engine. Reuses are detected by
         // the exception thrown by set_value.
         std::promise<std::pair<int, int>> mUIProm;
@@ -66,6 +69,9 @@ namespace Reversi {
 
         // Sends in a promise for the click.
         void listen_click(std::promise<std::pair<int, int>> prom);
+
+        // Sets the hint drawing function.
+        void set_draw_hint(bool enabled) noexcept;
     };
 
     // The skip button.
@@ -152,6 +158,9 @@ namespace Reversi {
 
         // Sets the automatic skip functionality. For use in the menu
         void menu_toggle_auto_skip(nana::menu::item_proxy& ip);
+
+        // Sets the hint drawing functionality, for use in menu
+        void menu_toggle_hint(nana::menu::item_proxy& ip);
 
         // Updates the GUI according to the board b. The last move was
         // given to draw the cross.
