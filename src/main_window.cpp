@@ -132,7 +132,7 @@ namespace Reversi {
                 mGameMan->resume_game();
             diag.close();
         });
-        diag.events().unload([this, is_startup] {
+        diag.events().unload([this] {
             if (mGameMan->engines_loaded())
                 // If the game has started, this call is a no-op.
                 mGameMan->resume_game();

@@ -100,7 +100,7 @@ namespace Reversi {
 
     // interface fwd
     class Engine;
-    class MainWindow;
+    struct MainWindow;
 
     // Manager of a game
     class GameMan : public std::enable_shared_from_this<GameMan> {

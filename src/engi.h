@@ -117,7 +117,7 @@ namespace Reversi {
     };
 
     // Fwd for the MainWindow class.
-    class MainWindow;
+    struct MainWindow;
 
     // Constructs a new std::unique_ptr<Engine> that points
     // to an object of the correct derived type of Engine.
